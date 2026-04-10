@@ -1,0 +1,11 @@
+{
+  "name": "screencopy",
+  "version": "0.1.0",
+  "description": "Screen recording and video editing application",
+  "dependencies": [
+    {
+      "name": "ffmpeg",
+      "features": ["avcodec", "avformat", "avfilter", "swscale", "swresample", "x264", "x265"]
+    }
+  ]
+}
