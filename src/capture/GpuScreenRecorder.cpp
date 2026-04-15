@@ -75,7 +75,6 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
         args << "-a" << audioSources.join("|") << "-ac" << "aac";
     }
 
-    qDebug() << "gpu-screen-recorder:" << GPU_RECORDER_PATH << args.join(" ");
 
     connect(m_process, &QProcess::finished, this, [this](int exitCode, QProcess::ExitStatus status) {
         Q_UNUSED(exitCode);
@@ -103,7 +102,6 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
 
     connect(m_process, &QProcess::readyReadStandardError, this, [this]() {
         auto data = m_process->readAllStandardError();
-        qDebug() << "gpu-screen-recorder stderr:" << data;
     });
 
     m_process->start(GPU_RECORDER_PATH, args);
@@ -127,7 +125,6 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
             m_state = RecordingState::Recording;
             emit stateChanged(m_state);
             emit recordingStarted(m_outputPath);
-            qDebug() << "gpu-screen-recorder: recording started ->" << m_outputPath;
         }
     });
     m_pollTimer->start();

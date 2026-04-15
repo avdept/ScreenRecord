@@ -72,9 +72,6 @@ bool FFmpegDecoder::open(const QString &filePath)
     m_swFrame = av_frame_alloc();
     m_packet = av_packet_alloc();
 
-    qDebug() << "FFmpegDecoder: opened" << filePath
-             << width() << "x" << height()
-             << (m_hwDeviceCtx ? "(HW accelerated)" : "(software)");
 
     return true;
 }
@@ -111,8 +108,6 @@ bool FFmpegDecoder::openHardwareDecoder(const AVCodecParameters *codecpar)
 
         if (avcodec_open2(m_codecCtx, codec, nullptr) == 0) {
             m_hwDeviceCtx = hwCtx;
-            qDebug() << "FFmpegDecoder: using HW decoder:"
-                     << av_hwdevice_get_type_name(hwType);
             return true;
         }
 
@@ -139,7 +134,6 @@ bool FFmpegDecoder::openSoftwareDecoder(const AVCodecParameters *codecpar)
     }
 
     m_hwPixFmt = AV_PIX_FMT_NONE;
-    qDebug() << "FFmpegDecoder: using software decoder (multithreaded)";
     return true;
 }
 

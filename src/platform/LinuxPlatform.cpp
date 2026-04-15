@@ -5,7 +5,6 @@
 #include <QWindow>
 #include <QScreen>
 #include <QGuiApplication>
-#include <QDebug>
 
 namespace screencopy {
 
@@ -37,7 +36,6 @@ void LinuxPlatform::detectEnvironment()
     m_isHyprland = m_isWayland
                    && !env.value("HYPRLAND_INSTANCE_SIGNATURE").isEmpty();
 
-    qDebug() << "Platform: Linux, Wayland:" << m_isWayland << "Hyprland:" << m_isHyprland;
 }
 
 void LinuxPlatform::applyHudWindowRulesImpl(QWindow *window)
@@ -73,7 +71,6 @@ void LinuxPlatform::applyHyprlandRules()
         batch << QString("keyword windowrule %1").arg(rule);
 
     auto batchStr = batch.join(";");
-    qDebug() << "Applying Hyprland rules:" << batchStr;
 
     QProcess::execute("hyprctl", {"--batch", batchStr});
 }

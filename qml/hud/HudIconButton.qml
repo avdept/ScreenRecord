@@ -9,25 +9,33 @@ AbstractButton {
     property bool active: false
     property bool small: false
 
-    implicitWidth: small ? 26 : 30
-    implicitHeight: small ? 26 : 30
+    implicitWidth: small ? 26 : 34
+    implicitHeight: small ? 26 : 34
 
     background: Rectangle {
-        radius: width / 2
+        radius: 8
         color: root.hovered ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
         Behavior on color { ColorAnimation { duration: 150 } }
     }
 
-    contentItem: Image {
-        source: root.iconSource
-        sourceSize: Qt.size(root.small ? 14 : 16, root.small ? 14 : 16)
-        fillMode: Image.PreserveAspectFit
-        smooth: true
-        opacity: root.enabled ? 1.0 : 0.3
+    contentItem: Item {
+        implicitWidth: root.small ? 14 : 18
+        implicitHeight: root.small ? 14 : 18
 
-        // Green glow overlay for active state
-        layer.enabled: root.active
-        layer.samplerName: "source"
+        Image {
+            anchors.centerIn: parent
+            width: root.small ? 14 : 18
+            height: root.small ? 14 : 18
+            source: root.iconSource
+            // Render at 2x for crisp display, scale down
+            sourceSize: Qt.size(48, 48)
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            opacity: root.enabled ? 1.0 : 0.3
+
+            layer.enabled: root.active
+            layer.samplerName: "source"
+        }
     }
 
     scale: hovered ? 1.08 : (pressed ? 0.95 : 1.0)

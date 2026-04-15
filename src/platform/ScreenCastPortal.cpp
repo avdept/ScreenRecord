@@ -3,7 +3,6 @@
 #include <QDBusReply>
 #include <QDBusUnixFileDescriptor>
 #include <QCoreApplication>
-#include <QDebug>
 
 namespace screencopy {
 
@@ -145,8 +144,6 @@ void ScreenCastPortal::onStartResponse(uint response, const QVariantMap &results
             arg.endStructure();
 
             m_nodeId = nodeId;
-            qDebug() << "ScreenCast: PipeWire node" << nodeId
-                     << "source_type:" << props.value("source_type").toUInt();
             break; // use first stream
         }
         arg.endArray();

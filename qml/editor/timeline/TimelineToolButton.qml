@@ -11,10 +11,10 @@ AbstractButton {
 
     readonly property color green: "#34B27B"
 
-    implicitHeight: 26
-    implicitWidth: contentRow.implicitWidth + 14
     leftPadding: 7
     rightPadding: 7
+    topPadding: 4
+    bottomPadding: 4
 
     background: Rectangle {
         radius: 6

@@ -44,7 +44,7 @@ Item {
             height: root.videoH
             anchors.centerIn: parent
             radius: GlobalSettings.borderRadius
-            color: "black"
+            color: "transparent"
             clip: true
             visible: false  // hidden — MultiEffect draws it
             layer.enabled: true

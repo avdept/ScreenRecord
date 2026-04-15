@@ -4,11 +4,12 @@ import QtQuick.Controls
 AbstractButton {
     id: root
 
-    implicitWidth: Math.max(implicitContentWidth + 12, 40)
     implicitHeight: 34
+    leftPadding: 10
+    rightPadding: 10
 
     background: Rectangle {
-        radius: 17
+        radius: 8
         color: root.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.05)
         Behavior on color { ColorAnimation { duration: 150 } }
     }
