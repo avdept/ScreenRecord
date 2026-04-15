@@ -17,7 +17,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         height: 44
-        radius: 22
+        radius: 8
         color: "transparent"
         implicitWidth: barLayout.implicitWidth + 20
 
@@ -47,7 +47,9 @@ Item {
                 Image {
                     anchors.centerIn: parent
                     source: iconBase + "drag-handle.svg"
-                    sourceSize: Qt.size(14, 14)
+                    width: 14; height: 14
+                    sourceSize: Qt.size(48, 48)
+                    fillMode: Image.PreserveAspectFit
                     opacity: 0.3
                 }
 
@@ -74,17 +76,24 @@ Item {
                 enabled: !Recorder.recording
                 opacity: enabled ? 1.0 : 0.5
 
-                RowLayout {
-                    anchors.centerIn: parent
+                contentItem: RowLayout {
                     spacing: 4
 
-                    Image {
-                        source: iconBase + "monitor.svg"
-                        sourceSize: Qt.size(14, 14)
-                        opacity: 0.8
+                    Item {
+                        Layout.preferredWidth: 18
+                        Layout.preferredHeight: 18
+                        Image {
+                            anchors.centerIn: parent
+                            width: 18; height: 18
+                            source: iconBase + "monitor.svg"
+                            sourceSize: Qt.size(48, 48)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            opacity: 0.8
+                        }
                     }
                     Text {
-                        text: Recorder.canRecord ? Recorder.selectedSource : qsTr("Select")
+                        text: Recorder.hasSelectedSource ? Recorder.selectedSource : qsTr("Select")
                         font.pixelSize: 11
                         color: Qt.rgba(1, 1, 1, 0.7)
                         elide: Text.ElideRight
@@ -100,7 +109,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 implicitWidth: audioRow.implicitWidth + 8
                 implicitHeight: 34
-                radius: 17
+                radius: 8
                 color: Qt.rgba(1, 1, 1, 0.05)
 
                 RowLayout {
@@ -142,7 +151,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 implicitWidth: recordRow.implicitWidth + 16
                 implicitHeight: 34
-                radius: 17
+                radius: 8
                 opacity: (!Recorder.recording && !Recorder.canRecord) ? 0.5 : 1.0
 
                 color: {
@@ -176,7 +185,7 @@ Item {
                         Layout.preferredWidth: Recorder.recording ? 14 : 16
                         Layout.preferredHeight: Recorder.recording ? 14 : 16
                         Layout.alignment: Qt.AlignVCenter
-                        radius: Recorder.recording ? 3 : 8
+                        radius: Recorder.recording ? 2 : 7
                         color: {
                             if (Recorder.recording && Recorder.paused) return "#f59e0b"
                             if (Recorder.recording) return "#f87171"

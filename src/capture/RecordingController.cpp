@@ -28,7 +28,6 @@ void RecordingController::setGpuRecorder(GpuScreenRecorder *recorder)
 
     // When recording actually starts (portal selected, file created)
     connect(m_gpuRecorder, &GpuScreenRecorder::recordingStarted, this, [this](const QString &path) {
-        qDebug() << "Recording started:" << path;
 
         m_recording = true;
         m_paused = false;
@@ -86,7 +85,6 @@ void RecordingController::setPlatform(PlatformIntegration *platform)
     if (m_platform) {
         connect(m_platform, &PlatformIntegration::sourceSelected, this,
                 [this](const QString &sourceId, const QString &sourceName) {
-            qDebug() << "Source selected:" << sourceName << "(" << sourceId << ")";
             m_selectedSource = sourceName;
             m_selectedSourceName = sourceId;
             emit selectedSourceChanged();
@@ -262,14 +260,7 @@ void RecordingController::selectSource(const QString &sourceId, const QString &s
 
 void RecordingController::openSourceSelector()
 {
-    // On Wayland with gpu-screen-recorder, "select source" means "start recording"
-    // because gpu-screen-recorder shows the portal picker itself at recording start
-    if (m_gpuRecorder && m_gpuRecorder->isAvailable() && !m_recording) {
-        startRecording();
-        return;
-    }
-
-    // On other platforms, show the native source picker
+    // Show the native source picker on all platforms
     if (m_platform)
         m_platform->requestSourceSelection();
 }
@@ -282,8 +273,6 @@ void RecordingController::saveSessionFiles(const QString &videoPath)
     if (m_cursorTelemetry && !m_cursorTelemetry->samples().isEmpty()) {
         QString telemetryPath = videoPath + ".cursor.json";
         m_cursorTelemetry->saveToFile(telemetryPath);
-        qDebug() << "Saved cursor telemetry:" << telemetryPath
-                 << "(" << m_cursorTelemetry->samples().size() << "samples)";
     }
 
     // 2. Save session manifest
@@ -300,7 +289,6 @@ void RecordingController::saveSessionFiles(const QString &videoPath)
     if (manifestFile.open(QIODevice::WriteOnly)) {
         manifestFile.write(QJsonDocument(sessionObj).toJson(QJsonDocument::Indented));
         manifestFile.close();
-        qDebug() << "Saved session manifest:" << manifestPath;
     }
 }
 

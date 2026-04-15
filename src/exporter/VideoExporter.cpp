@@ -5,7 +5,6 @@
 #include "TrimModel.h"
 #include "EffectRegionModel.h"
 #include "filters/CompositeFilter.h"
-#include <QDebug>
 #include <QFileDialog>
 #include <QtMath>
 
@@ -177,9 +176,6 @@ void VideoExporter::runExport(const QString &inputPath,
     int totalFrames = qRound(trimmedDurationMs / 1000.0 * fps);
     if (totalFrames <= 0) totalFrames = 1;
 
-    qDebug() << "Export:" << srcWidth << "x" << srcHeight << "@" << fps
-             << "fps," << segs.size() << "segments,"
-             << trimmedDurationMs << "ms trimmed," << totalFrames << "frames";
 
     // --- 2. Open encoder ---
     int outWidth = srcWidth;
@@ -198,7 +194,6 @@ void VideoExporter::runExport(const QString &inputPath,
 
     // --- 3. Build filter pipeline ---
     FilterPipeline pipeline = createDefaultPipeline();
-    qDebug() << "Export pipeline:" << pipeline.filterNames();
 
     QMetaObject::invokeMethod(this, [this]() {
         m_statusText = "Encoding...";

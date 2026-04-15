@@ -11,7 +11,7 @@ Rectangle {
 
     implicitWidth: expanded ? 240 : 160
     implicitHeight: 36
-    radius: 12
+    radius: 8
     clip: true
 
     property bool expanded: hoverArea.containsMouse

@@ -7,8 +7,10 @@ AbstractButton {
 
     property string iconSource: ""
 
-    implicitHeight: 28
-    implicitWidth: contentRow.implicitWidth + 16
+    leftPadding: 8
+    rightPadding: 8
+    topPadding: 4
+    bottomPadding: 4
 
     background: Rectangle {
         radius: 6
