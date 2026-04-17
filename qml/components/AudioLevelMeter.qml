@@ -34,11 +34,11 @@ Item {
                 property bool isActive: root.level >= modelData.threshold
 
                 color: {
-                    if (!isActive) return "#334155"  // slate-700
-                    if (modelData.threshold < 40) return "#10b981"  // emerald-500
-                    if (modelData.threshold < 60) return "#22c55e"  // green-500
-                    if (modelData.threshold < 80) return "#eab308"  // yellow-500
-                    return "#ef4444"  // red-500
+                    if (!isActive) return Theme.textInactive
+                    if (modelData.threshold < 40) return Theme.success
+                    if (modelData.threshold < 60) return Theme.green
+                    if (modelData.threshold < 80) return Theme.amber
+                    return Theme.red
                 }
 
                 opacity: isActive ? 1.0 : 0.4

@@ -11,7 +11,7 @@ ApplicationWindow {
     minimumHeight: 600
     visible: true
     title: "ScreenCopy — Editor"
-    color: "#09090b"
+    color: Theme.backgroundDark
 
     property string videoPath: ""
 
@@ -216,7 +216,7 @@ ApplicationWindow {
                 Layout.fillHeight: false
                 Layout.preferredHeight: 100
                 radius: 4
-                color: "#09090b"
+                color: Theme.backgroundDark
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.05)
 

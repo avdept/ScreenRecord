@@ -20,7 +20,7 @@ Item {
         anchors.fill: parent
         radius: 12
         clip: true
-        color: GlobalSettings.wallpaper.startsWith("#") ? GlobalSettings.wallpaper : "#1a1a2e"
+        color: GlobalSettings.wallpaper.startsWith("#") ? GlobalSettings.wallpaper : Theme.background
 
         Image {
             anchors.fill: parent
@@ -67,7 +67,7 @@ Item {
             visible: root.si > 0.01
 
             shadowEnabled: true
-            shadowColor: "#000000"
+            shadowColor: Theme.black
             shadowBlur: root.si
             shadowVerticalOffset: root.si * 14
             shadowHorizontalOffset: 0

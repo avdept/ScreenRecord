@@ -6,7 +6,7 @@ Item {
     id: root
 
     property string title: ""
-    property color accentColor: "#34B27B"
+    property color accentColor: Theme.green
     property bool expanded: true
     default property alias content: contentColumn.data
 
@@ -45,7 +45,7 @@ Item {
                         text: root.title
                         font.pixelSize: 12
                         font.weight: Font.Medium
-                        color: "#e2e8f0"
+                        color: Theme.textLight
                         Layout.fillWidth: true
                     }
 

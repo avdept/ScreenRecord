@@ -173,7 +173,7 @@ void VideoExporter::runExport(const QString &inputPath,
         segs.append({0, decoder.durationMs()});
     }
     for (const auto &seg : segs)
-        trimmedDurationMs += seg.durationMs();
+        trimmedDurationMs += seg.effectiveDurationMs();
 
     int totalFrames = qRound(trimmedDurationMs / 1000.0 * fps);
     if (totalFrames <= 0) totalFrames = 1;
@@ -211,10 +211,11 @@ void VideoExporter::runExport(const QString &inputPath,
 
         decoder.seekTo(seg.startMs);
 
-        // For speed changes: track which frames to keep.
-        // At 2x speed, keep every other frame (output has half the frames).
-        // At 0.5x speed, duplicate each frame (output has double the frames).
-        double frameAccumulator = 0.0;
+        // Speed handling via accumulator:
+        // Each input frame contributes 1/speed output frames.
+        // At 2x: each input adds 0.5 → write 1 frame every 2 inputs.
+        // At 0.5x: each input adds 2.0 → write 2 frames per input.
+        double outputFrameAccum = 0.0;
 
         while (!m_cancelled.load()) {
             QImage rawFrame = decoder.decodeNextFrame();
@@ -240,19 +241,9 @@ void VideoExporter::runExport(const QString &inputPath,
 
             QImage composited = pipeline.process(rawFrame, ctx);
 
-            // Speed handling: at 2x, write every other frame.
-            // At 0.5x, write each frame twice.
-            frameAccumulator += segSpeed;
-            if (segSpeed >= 1.0) {
-                // Fast: skip frames — only write when accumulator reaches threshold
-                if (frameAccumulator < 1.0)
-                    continue;
-                frameAccumulator -= 1.0;
-            }
+            outputFrameAccum += 1.0 / segSpeed;
 
-            // Write frame (possibly multiple times for slow motion)
-            int repeats = (segSpeed < 1.0) ? qRound(1.0 / segSpeed) : 1;
-            for (int r = 0; r < repeats; r++) {
+            while (outputFrameAccum >= 1.0) {
                 if (!encoder.writeFrame(composited)) {
                     QMetaObject::invokeMethod(this, [this]() {
                         emit exportError("Failed to encode frame");
@@ -260,14 +251,16 @@ void VideoExporter::runExport(const QString &inputPath,
                     goto done;
                 }
                 frameIndex++;
+                outputFrameAccum -= 1.0;
             }
 
             // Update progress
             if (frameIndex % 5 == 0 || frameIndex >= totalFrames) {
                 double prog = qMin(1.0, static_cast<double>(frameIndex) / totalFrames);
-                QMetaObject::invokeMethod(this, [this, prog, frameIndex, totalFrames]() {
+                int displayFrame = qMin(frameIndex, totalFrames);
+                QMetaObject::invokeMethod(this, [this, prog, displayFrame, totalFrames]() {
                     m_progress = prog;
-                    m_statusText = QString("Encoding frame %1/%2...").arg(frameIndex).arg(totalFrames);
+                    m_statusText = QString("Encoding frame %1/%2...").arg(displayFrame).arg(totalFrames);
                     emit progressChanged();
                     emit statusTextChanged();
                 }, Qt::QueuedConnection);

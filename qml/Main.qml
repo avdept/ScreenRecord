@@ -11,7 +11,7 @@ ApplicationWindow {
     minimumHeight: 600
     visible: true
     title: "OpenScreen"
-    color: "#1a1a2e"
+    color: Theme.background
 
     // HUD window instance
     HudWindow {
@@ -29,14 +29,14 @@ ApplicationWindow {
             text: "OpenScreen"
             font.pixelSize: 32
             font.weight: Font.Bold
-            color: "#e0e0e0"
+            color: Theme.textPrimary
         }
 
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "Qt6 Native Application"
             font.pixelSize: 16
-            color: "#888"
+            color: Theme.textSecondary
         }
 
         Item { Layout.preferredHeight: 20 }
@@ -51,13 +51,13 @@ ApplicationWindow {
                 implicitWidth: 200
                 implicitHeight: 44
                 radius: 22
-                color: parent.hovered ? "#8484ff" : "#6c6cff"
+                color: parent.hovered ? Theme.primaryHover : Theme.primary
                 Behavior on color { ColorAnimation { duration: 150 } }
             }
             contentItem: Text {
                 text: parent.text
                 font: parent.font
-                color: "white"
+                color: Theme.white
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
@@ -67,7 +67,7 @@ ApplicationWindow {
             Layout.alignment: Qt.AlignHCenter
             text: "Or run with --hud flag for standalone HUD mode"
             font.pixelSize: 12
-            color: "#666"
+            color: Theme.textDim
         }
 
         Item { Layout.fillHeight: true }

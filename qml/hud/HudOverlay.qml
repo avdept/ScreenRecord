@@ -26,11 +26,11 @@ Item {
             anchors.fill: parent
             radius: parent.radius
             gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(28/255, 28/255, 36/255, 0.97) }
-                GradientStop { position: 1.0; color: Qt.rgba(18/255, 18/255, 26/255, 0.96) }
+                GradientStop { position: 0.0; color: Theme.hudSurface }
+                GradientStop { position: 1.0; color: Theme.hudSurfaceAlt }
             }
             border.width: 1
-            border.color: Qt.rgba(80/255, 80/255, 120/255, 0.25)
+            border.color: Theme.hudBorder
         }
 
         RowLayout {
@@ -187,8 +187,8 @@ Item {
                         Layout.alignment: Qt.AlignVCenter
                         radius: Recorder.recording ? 2 : 7
                         color: {
-                            if (Recorder.recording && Recorder.paused) return "#f59e0b"
-                            if (Recorder.recording) return "#f87171"
+                            if (Recorder.recording && Recorder.paused) return Theme.amber
+                            if (Recorder.recording) return Theme.redLight
                             if (Recorder.canRecord) return Qt.rgba(1, 1, 1, 0.8)
                             return Qt.rgba(1, 1, 1, 0.3)
                         }
@@ -202,7 +202,7 @@ Item {
                         font.pixelSize: 12
                         font.weight: Font.DemiBold
                         font.family: "monospace"
-                        color: Recorder.paused ? "#f59e0b" : "#f87171"
+                        color: Recorder.paused ? Theme.amber : Theme.redLight
                         Layout.alignment: Qt.AlignVCenter
                     }
                 }

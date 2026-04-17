@@ -7,7 +7,7 @@ Item {
     id: root
     clip: true
 
-    readonly property color green: "#34B27B"
+    readonly property color green: Theme.green
     property int bgTab: 0  // 0=Image, 1=Color
 
     property int selectedQuality: 1  // 0=Medium, 1=Good, 2=Source
@@ -45,7 +45,7 @@ Item {
                             text: qsTr("Segment Properties")
                             font.pixelSize: 12
                             font.weight: Font.Medium
-                            color: "#e2e8f0"
+                            color: Theme.textLight
                             Layout.fillWidth: true
                         }
 
@@ -95,7 +95,7 @@ Item {
                                 text: qsTr("Speed")
                                 font.pixelSize: 11
                                 font.weight: Font.Medium
-                                color: "#94a3b8"
+                                color: Theme.textSlate
                             }
 
                     GridLayout {
@@ -122,7 +122,7 @@ Item {
                                     text: modelData + "x"
                                     font.pixelSize: 10
                                     font.weight: Font.Medium
-                                    color: isActive ? "white" : "#94a3b8"
+                                    color: isActive ? Theme.white : Theme.textSlate
                                 }
 
                                 MouseArea {
@@ -151,7 +151,7 @@ Item {
                 accentColor: {
                     var t = EffectRegions.selectedType
                     if (t === 0) return root.green
-                    if (t === 1) return "#f59e0b"
+                    if (t === 1) return Theme.amber
                     return "#b4a046"
                 }
 
@@ -196,7 +196,7 @@ Item {
                                             text: modelData.toString()
                                             font.pixelSize: 11
                                             font.weight: Font.Medium
-                                            color: modelData === parent.currentDepth ? "white" : "#94a3b8"
+                                            color: modelData === parent.currentDepth ? Theme.white : Theme.textSlate
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -221,7 +221,7 @@ Item {
                                 value: EffectRegions.selectedSettings.speed || 1.0
                                 onMoved: function(v) { EffectRegions.updateSelectedSetting("speed", v) }
                                 from: 0.5; to: 4.0; stepSize: 0.25
-                                accentColor: "#f59e0b"
+                                accentColor: Theme.amber
                             }
                         }
                     }
@@ -330,7 +330,7 @@ Item {
                                         anchors.centerIn: parent
                                         text: modelData
                                         font.pixelSize: 10
-                                        color: root.bgTab === index ? "white" : "#94a3b8"
+                                        color: root.bgTab === index ? Theme.white : Theme.textSlate
                                     }
 
                                     MouseArea {
@@ -499,13 +499,13 @@ Item {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     radius: 6
-                                    color: root.selectedQuality === index ? "white" : "transparent"
+                                    color: root.selectedQuality === index ? Theme.white : "transparent"
 
                                     Text {
                                         anchors.centerIn: parent
                                         text: modelData
                                         font.pixelSize: 10
-                                        color: root.selectedQuality === index ? "black" : "#94a3b8"
+                                        color: root.selectedQuality === index ? Theme.black : Theme.textSlate
                                     }
 
                                     MouseArea {
@@ -541,7 +541,7 @@ Item {
                         visible: Exporter.exporting
                         text: Exporter.statusText
                         font.pixelSize: 10
-                        color: "#94a3b8"
+                        color: Theme.textSlate
                         Layout.fillWidth: true
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -551,7 +551,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 48
                         radius: 12
-                        color: Exporter.exporting ? "#ef4444" : root.green
+                        color: Exporter.exporting ? Theme.red : root.green
 
                         Behavior on color { ColorAnimation { duration: 200 } }
 
@@ -560,7 +560,7 @@ Item {
                             text: Exporter.exporting ? qsTr("Cancel Export") : qsTr("Export Video")
                             font.pixelSize: 14
                             font.weight: Font.DemiBold
-                            color: "white"
+                            color: Theme.white
                         }
 
                         MouseArea {

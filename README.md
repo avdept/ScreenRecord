@@ -17,13 +17,11 @@ sudo pacman -S qt6-base qt6-declarative qt6-multimedia qt6-wayland ffmpeg pipewi
 #### Build
 
 ```bash
-cd qt
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+make build
 ```
 
 #### Run
 
 ```bash
-./build/screencopy
+make run
 ```

@@ -9,7 +9,7 @@ Item {
 
     signal seekRequested(real ms)
 
-    readonly property color green: "#34B27B"
+    readonly property color green: Theme.green
     readonly property string iconBase: "qrc:/ScreenCopy/resources/icons/"
 
     // Current active tool
@@ -83,7 +83,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 28
-            color: "#09090b"
+            color: Theme.backgroundDark
 
             Item {
                 anchors.fill: parent
@@ -209,7 +209,7 @@ Item {
                         text: speed.toFixed(2) + "x"
                         font.pixelSize: 9
                         font.weight: Font.Medium
-                        color: "#f59e0b"
+                        color: Theme.amber
                     }
 
                     // Duration label
@@ -239,7 +239,7 @@ Item {
                             text: "\u2715"
                             font.pixelSize: 9
                             font.weight: Font.Bold
-                            color: "white"
+                            color: Theme.white
                         }
 
                         MouseArea {
