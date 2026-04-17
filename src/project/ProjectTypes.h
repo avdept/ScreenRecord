@@ -9,6 +9,9 @@
 
 namespace screencopy {
 
+constexpr double kMinPlaybackSpeed = 0.5;
+constexpr double kMaxPlaybackSpeed = 4.0;
+
 // Aspect ratio presets
 enum class AspectRatio {
     Native,

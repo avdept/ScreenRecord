@@ -17,8 +17,8 @@ Rectangle {
     property bool expanded: hoverArea.containsMouse
 
     gradient: Gradient {
-        GradientStop { position: 0.0; color: Qt.rgba(28/255, 28/255, 36/255, 0.97) }
-        GradientStop { position: 1.0; color: Qt.rgba(18/255, 18/255, 26/255, 0.96) }
+        GradientStop { position: 0.0; color: Theme.hudSurface }
+        GradientStop { position: 1.0; color: Theme.hudSurfaceAlt }
     }
     border.width: 1
     border.color: Qt.rgba(1, 1, 1, 0.1)

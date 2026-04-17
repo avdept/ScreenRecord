@@ -9,7 +9,7 @@ AbstractButton {
     property string shortcutKey: ""
     property bool active: false
 
-    readonly property color green: "#34B27B"
+    readonly property color green: Theme.green
 
     leftPadding: 7
     rightPadding: 7
@@ -48,7 +48,7 @@ AbstractButton {
             text: root.text
             font.pixelSize: 11
             font.weight: Font.Medium
-            color: "white"
+            color: Theme.white
             opacity: root.active ? 1.0 : (root.hovered ? 0.9 : 0.5)
             Layout.alignment: Qt.AlignVCenter
             Behavior on opacity { NumberAnimation { duration: 150 } }

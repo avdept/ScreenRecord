@@ -10,7 +10,7 @@ Item {
     property real from: 0
     property real to: 1
     property real stepSize: 0.01
-    property color accentColor: "#34B27B"
+    property color accentColor: Theme.green
 
     signal moved(real value)
 
@@ -29,7 +29,7 @@ Item {
             Text {
                 text: root.label
                 font.pixelSize: 11
-                color: "#cbd5e1"  // slate-300
+                color: Theme.textMuted
                 Layout.fillWidth: true
             }
 
@@ -37,7 +37,7 @@ Item {
                 text: root.value.toFixed(root.stepSize < 1 ? 2 : 0)
                 font.pixelSize: 10
                 font.family: "monospace"
-                color: "#64748b"  // slate-500
+                color: Theme.textDim
             }
         }
 
@@ -75,7 +75,7 @@ Item {
                 width: 12
                 height: 12
                 radius: 6
-                color: "white"
+                color: Theme.white
                 border.width: 2
                 border.color: root.accentColor
 

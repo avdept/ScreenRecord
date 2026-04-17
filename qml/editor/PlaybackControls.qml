@@ -29,7 +29,7 @@ Rectangle {
             Layout.preferredWidth: 32
             Layout.preferredHeight: 32
             radius: 16
-            color: Playback.playing ? Qt.rgba(1, 1, 1, 0.1) : "white"
+            color: Playback.playing ? Qt.rgba(1, 1, 1, 0.1) : Theme.white
             border.width: 1
             border.color: Qt.rgba(1, 1, 1, 0.1)
 
@@ -60,7 +60,7 @@ Rectangle {
             font.pixelSize: 9
             font.weight: Font.Medium
             font.family: "monospace"
-            color: "#cbd5e1"
+            color: Theme.textMuted
             Layout.preferredWidth: 52
             horizontalAlignment: Text.AlignRight
         }
@@ -85,7 +85,7 @@ Rectangle {
                            : 0
                     height: parent.height
                     radius: parent.radius
-                    color: "#34B27B"
+                    color: Theme.green
                 }
             }
 
@@ -98,7 +98,7 @@ Rectangle {
                 width: 10
                 height: 10
                 radius: 5
-                color: "white"
+                color: Theme.white
 
                 scale: seekArea.containsMouse ? 1.15 : 1.0
                 Behavior on scale { NumberAnimation { duration: 80 } }
@@ -128,7 +128,7 @@ Rectangle {
             font.pixelSize: 9
             font.weight: Font.Medium
             font.family: "monospace"
-            color: "#64748b"
+            color: Theme.textDim
             Layout.preferredWidth: 52
         }
     }

@@ -11,7 +11,7 @@ ApplicationWindow {
     minimumHeight: 600
     visible: true
     title: "ScreenCopy — Editor"
-    color: "#09090b"
+    color: Theme.backgroundDark
 
     property string videoPath: ""
 
@@ -60,6 +60,17 @@ ApplicationWindow {
         }
     }
 
+    // Sync per-segment speed to VideoPlayer
+    Connections {
+        target: Playback
+        function onCurrentTimeMsChanged() {
+            var speed = TrimModel.speedAt(Playback.currentTimeMs)
+            if (Math.abs(videoPlayback.videoPlayer.playbackSpeed - speed) > 0.01) {
+                videoPlayback.videoPlayer.playbackSpeed = speed
+            }
+        }
+    }
+
     function syncSegmentsToPlayer() {
         var segs = [];
         for (var i = 0; i < TrimModel.count; i++) {
@@ -77,11 +88,9 @@ ApplicationWindow {
     Connections {
         target: Exporter
         function onExportFinished(path) {
-            console.log("Export done:", path);
             Platform.revealInFolder(path);
         }
         function onExportError(msg) {
-            console.error("Export error:", msg);
         }
     }
 
@@ -154,6 +163,7 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 Layout.preferredHeight: 7
                 radius: 4
+                clip: true
                 color: Qt.rgba(0, 0, 0, 0.4)   // bg-black/40
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.05)
@@ -206,7 +216,7 @@ ApplicationWindow {
                 Layout.fillHeight: false
                 Layout.preferredHeight: 100
                 radius: 4
-                color: "#09090b"
+                color: Theme.backgroundDark
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.05)
 
@@ -222,23 +232,18 @@ ApplicationWindow {
             }
         }
 
-        // Right column — flex-[3], min-w-280, max-w-420
-        // rounded-2xl, border white/5, shadow-xl
-        Rectangle {
+        // Right column — settings panel
+        Item {
             Layout.fillHeight: true
             Layout.preferredWidth: 320
             Layout.minimumWidth: 280
             Layout.maximumWidth: 420
-            radius: 4
-            color: "#09090b"
-            border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.05)
 
             SettingsPanel {
                 anchors.fill: parent
-                anchors.margins: 1
 
                 onExportRequested: function (qualityIndex) {
+                    videoPlayback.videoPlayer.pause();
                     Exporter.startExportWithDialog(editorWindow.videoPath, qualityIndex);
                 }
             }

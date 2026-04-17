@@ -6,39 +6,36 @@
 namespace screencopy {
 
 struct TrimSegment {
-    qint64 startMs = 0;   // start in original video time
-    qint64 endMs = 0;     // end in original video time
+    qint64 startMs = 0;
+    qint64 endMs = 0;
+    double speed = 1.0;   // playback speed for this segment
     qint64 durationMs() const { return endMs - startMs; }
+    // Effective duration accounting for speed
+    qint64 effectiveDurationMs() const { return static_cast<qint64>(durationMs() / speed); }
 };
 
-// Non-destructive trim model.
-// Maintains a list of "keep" segments in original video time.
-// Gaps between segments = cut parts that won't appear in output.
-//
-// Initially: one segment [0, videoDuration].
-// splitAt(ms): splits the segment containing ms into two.
-// removeSegment(index): deletes a segment (marks that region as cut).
-// The display timeline collapses gaps — segments appear back-to-back.
 class TrimModel : public QAbstractListModel
 {
     Q_OBJECT
     Q_PROPERTY(int count READ segmentCount NOTIFY segmentsChanged)
     Q_PROPERTY(qint64 totalDurationMs READ totalDurationMs NOTIFY segmentsChanged)
     Q_PROPERTY(qint64 originalDurationMs READ originalDurationMs NOTIFY originalDurationChanged)
+    Q_PROPERTY(int selectedIndex READ selectedIndex WRITE setSelectedIndex NOTIFY selectedIndexChanged)
+    Q_PROPERTY(double selectedSpeed READ selectedSpeed WRITE setSelectedSpeed NOTIFY selectedSpeedChanged)
 
 public:
     enum Roles {
         StartMsRole = Qt::UserRole + 1,
         EndMsRole,
         DurationMsRole,
-        // Position in the collapsed (display) timeline
         DisplayStartMsRole,
         DisplayEndMsRole,
+        SpeedRole,
+        SelectedRole,
     };
 
     explicit TrimModel(QObject *parent = nullptr);
 
-    // QAbstractListModel
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     QVariant data(const QModelIndex &index, int role) const override;
     QHash<int, QByteArray> roleNames() const override;
@@ -49,6 +46,14 @@ public:
 
     const QList<TrimSegment> &segments() const { return m_segments; }
 
+    // Selection
+    int selectedIndex() const { return m_selectedIndex; }
+    void setSelectedIndex(int index);
+    double selectedSpeed() const;
+    void setSelectedSpeed(double speed);
+    Q_INVOKABLE void selectSegmentAt(qint64 originalMs);
+    Q_INVOKABLE void clearSelection();
+
     // Initialize with full video duration
     Q_INVOKABLE void initialize(qint64 durationMs);
 
@@ -58,35 +63,29 @@ public:
     // Remove a segment by index
     Q_INVOKABLE void removeSegment(int index);
 
-    // Map display time (collapsed, no gaps) → original video time
+    // Time mapping
     Q_INVOKABLE qint64 displayToOriginal(qint64 displayMs) const;
-
-    // Map original video time → display time
     Q_INVOKABLE qint64 originalToDisplay(qint64 originalMs) const;
-
-    // Find which segment contains the given original time (-1 if in a gap)
     Q_INVOKABLE int segmentIndexAt(qint64 originalMs) const;
-
-    // Get display-timeline start position for a segment
     Q_INVOKABLE qint64 displayStartForSegment(int index) const;
-
-    // Get the end time of the segment containing originalMs. Returns -1 if in a gap.
     Q_INVOKABLE qint64 segmentEndAt(qint64 originalMs) const;
-
-    // Get the start of the next kept segment after the given original time.
-    // Returns -1 if there is no next segment.
     Q_INVOKABLE qint64 nextSegmentStartAfter(qint64 originalMs) const;
 
-    // Reset to single segment covering full duration
+    // Get speed for the segment containing originalMs (1.0 if in a gap)
+    Q_INVOKABLE double speedAt(qint64 originalMs) const;
+
     Q_INVOKABLE void reset();
 
 signals:
     void segmentsChanged();
     void originalDurationChanged();
+    void selectedIndexChanged();
+    void selectedSpeedChanged();
 
 private:
     QList<TrimSegment> m_segments;
     qint64 m_originalDurationMs = 0;
+    int m_selectedIndex = -1;
 };
 
 } // namespace screencopy

@@ -33,6 +33,7 @@ bool FFmpegEncoder::open(const QString &outputPath, int width, int height, doubl
     m_codecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
     m_codecCtx->bit_rate = bitrate;
     m_codecCtx->gop_size = 12;
+    m_codecCtx->thread_count = 4;
 
     if (m_formatCtx->oformat->flags & AVFMT_GLOBALHEADER)
         m_codecCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
@@ -45,7 +46,7 @@ bool FFmpegEncoder::open(const QString &outputPath, int width, int height, doubl
     m_frame->format = m_codecCtx->pix_fmt;
     m_frame->width = width;
     m_frame->height = height;
-    av_frame_get_buffer(m_frame, 0);
+    if (av_frame_get_buffer(m_frame, 32) < 0) return false;
 
     m_packet = av_packet_alloc();
 
@@ -54,7 +55,7 @@ bool FFmpegEncoder::open(const QString &outputPath, int width, int height, doubl
             return false;
     }
 
-    avformat_write_header(m_formatCtx, nullptr);
+    if (avformat_write_header(m_formatCtx, nullptr) < 0) return false;
     m_frameCount = 0;
     return true;
 }
@@ -64,13 +65,20 @@ bool FFmpegEncoder::writeFrame(const QImage &frame)
     if (!m_codecCtx || frame.isNull()) return false;
 
     auto rgbaImage = frame.convertToFormat(QImage::Format_RGBA8888);
+    if (rgbaImage.isNull() || !rgbaImage.constBits()) return false;
 
-    if (!m_swsCtx) {
+    // Recreate sws context if input size doesn't match encoder size
+    if (!m_swsCtx || rgbaImage.width() != m_codecCtx->width || rgbaImage.height() != m_codecCtx->height) {
+        if (m_swsCtx) sws_freeContext(m_swsCtx);
         m_swsCtx = sws_getContext(
             rgbaImage.width(), rgbaImage.height(), AV_PIX_FMT_RGBA,
             m_codecCtx->width, m_codecCtx->height, AV_PIX_FMT_YUV420P,
             SWS_BILINEAR, nullptr, nullptr, nullptr);
+        if (!m_swsCtx) return false;
     }
+
+    // Ensure frame buffer is writable
+    if (av_frame_make_writable(m_frame) < 0) return false;
 
     const uint8_t *srcData[1] = { rgbaImage.constBits() };
     int srcLinesize[1] = { static_cast<int>(rgbaImage.bytesPerLine()) };

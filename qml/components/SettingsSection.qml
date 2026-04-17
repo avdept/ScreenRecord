@@ -2,79 +2,99 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 
-// Collapsible settings section matching Electron's Accordion style
 Item {
     id: root
 
     property string title: ""
-    property color accentColor: "#34B27B"
+    property color accentColor: Theme.green
     property bool expanded: true
     default property alias content: contentColumn.data
 
     Layout.fillWidth: true
-    implicitHeight: sectionCol.implicitHeight
-    implicitWidth: sectionCol.implicitWidth
+    implicitHeight: sectionBox.implicitHeight
+    implicitWidth: sectionBox.implicitWidth
 
-    ColumnLayout {
-        id: sectionCol
+    Rectangle {
+        id: sectionBox
         anchors.left: parent.left
         anchors.right: parent.right
-        spacing: 0
+        implicitHeight: sectionCol.implicitHeight
+        radius: 4
+        color: Qt.rgba(1, 1, 1, 0.02)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.08)
 
-        // Header
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            radius: expanded ? 12 : 12
-            color: Qt.rgba(1, 1, 1, 0.02)
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 12
-                anchors.rightMargin: 12
-                spacing: 8
-
-                // Accent dot
-                Rectangle {
-                    width: 6
-                    height: 6
-                    radius: 3
-                    color: root.accentColor
-                }
-
-                Text {
-                    text: root.title
-                    font.pixelSize: 12
-                    font.weight: Font.Medium
-                    color: "#e2e8f0"  // slate-200
-                    Layout.fillWidth: true
-                }
-
-                // Chevron
-                Text {
-                    text: root.expanded ? "\u25B4" : "\u25BE"
-                    font.pixelSize: 10
-                    color: Qt.rgba(1, 1, 1, 0.3)
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.expanded = !root.expanded
-            }
-        }
-
-        // Content
         ColumnLayout {
-            id: contentColumn
-            Layout.fillWidth: true
-            Layout.leftMargin: 12
-            Layout.rightMargin: 12
-            Layout.topMargin: 8
-            Layout.bottomMargin: 12
-            visible: root.expanded
-            spacing: 8
+            id: sectionCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            spacing: 0
+
+            // Header
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 36
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    spacing: 6
+
+                    Text {
+                        text: root.title
+                        font.pixelSize: 12
+                        font.weight: Font.Medium
+                        color: Theme.textLight
+                        Layout.fillWidth: true
+                    }
+
+                    // Chevron
+                    Image {
+                        source: "qrc:/ScreenCopy/resources/icons/chevron-down.svg"
+                        sourceSize: Qt.size(12, 12)
+                        width: 12; height: 12
+                        fillMode: Image.PreserveAspectFit
+                        rotation: root.expanded ? 180 : 0
+                        opacity: 0.4
+
+                        Behavior on rotation { NumberAnimation { duration: 150 } }
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.expanded = !root.expanded
+                }
+            }
+
+            // Content wrapper with height animation
+            Item {
+                id: contentWrapper
+                Layout.fillWidth: true
+                Layout.preferredHeight: root.expanded ? contentColumn.implicitHeight + 14 : 0
+                clip: true
+                opacity: root.expanded ? 1.0 : 0.0
+
+                Behavior on Layout.preferredHeight {
+                    NumberAnimation { duration: 200; easing.type: Easing.OutCubic }
+                }
+                Behavior on opacity {
+                    NumberAnimation { duration: 150 }
+                }
+
+                ColumnLayout {
+                    id: contentColumn
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 4
+                    spacing: 8
+                }
+            }
         }
     }
 }
