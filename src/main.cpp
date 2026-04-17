@@ -23,6 +23,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    app.setQuitOnLastWindowClosed(false);
     app.setApplicationName("ScreenCopy");
     app.setOrganizationName("ScreenCopy");
     app.setApplicationVersion("0.1.0");

@@ -80,7 +80,7 @@ void VideoExporter::startExport(const QString &inputPath,
     if (m_effectRegions)
         effects = m_effectRegions->regions();
 
-    // Run on worker thread to keep UI responsive
+    // Run on worker thread
     m_workerThread = QThread::create([this, inputPath, outputPath, edState, quality, segments, effects]() {
         runExport(inputPath, outputPath, edState, quality, segments, effects);
     });
@@ -88,11 +88,10 @@ void VideoExporter::startExport(const QString &inputPath,
     connect(m_workerThread, &QThread::finished, this, [this, outputPath]() {
         m_workerThread->deleteLater();
         m_workerThread = nullptr;
-        bool wasCancelled = m_cancelled.load();
         m_exporting = false;
         emit exportingChanged();
 
-        if (!wasCancelled && m_progress >= 0.99) {
+        if (!m_cancelled.load() && m_progress >= 0.99) {
             emit exportFinished(outputPath);
         }
     });
@@ -102,12 +101,14 @@ void VideoExporter::startExport(const QString &inputPath,
 
 void VideoExporter::startExportWithDialog(const QString &inputPath, int qualityIndex)
 {
+
     QString outputPath = QFileDialog::getSaveFileName(
         nullptr,
         "Export Video",
         QDir::homePath() + "/output.mp4",
         "MP4 Video (*.mp4)"
     );
+
 
     if (outputPath.isEmpty())
         return;
@@ -147,6 +148,7 @@ void VideoExporter::runExport(const QString &inputPath,
                               const QList<TrimSegment> &segments,
                               const QList<EffectRegion> &effectRegions)
 {
+
     // --- 1. Open input ---
     FFmpegDecoder decoder;
     if (!decoder.open(inputPath)) {
@@ -205,11 +207,15 @@ void VideoExporter::runExport(const QString &inputPath,
 
     for (int segIdx = 0; segIdx < segs.size() && !m_cancelled.load(); ++segIdx) {
         const auto &seg = segs[segIdx];
+        double segSpeed = seg.speed;
 
-        // Seek to segment start
         decoder.seekTo(seg.startMs);
 
-        // Decode frames within this segment
+        // For speed changes: track which frames to keep.
+        // At 2x speed, keep every other frame (output has half the frames).
+        // At 0.5x speed, duplicate each frame (output has double the frames).
+        double frameAccumulator = 0.0;
+
         while (!m_cancelled.load()) {
             QImage rawFrame = decoder.decodeNextFrame();
             if (rawFrame.isNull())
@@ -217,15 +223,13 @@ void VideoExporter::runExport(const QString &inputPath,
 
             qint64 framePts = decoder.lastFramePtsMs();
 
-            // Stop if we've gone past this segment's end
             if (framePts > seg.endMs)
                 break;
 
-            // Skip frames before segment start (after seek lands on earlier keyframe)
             if (framePts < seg.startMs)
                 continue;
 
-            // Build filter context with active effects at this timestamp
+            // Build filter context
             FilterContext ctx;
             ctx.timeMs = framePts;
             ctx.outputWidth = outWidth;
@@ -234,18 +238,29 @@ void VideoExporter::runExport(const QString &inputPath,
             ctx.editor = &editorState;
             ctx.activeEffects = findActiveEffects(effectRegions, framePts);
 
-            // Run through pipeline
             QImage composited = pipeline.process(rawFrame, ctx);
 
-            // Encode
-            if (!encoder.writeFrame(composited)) {
-                QMetaObject::invokeMethod(this, [this]() {
-                    emit exportError("Failed to encode frame");
-                }, Qt::QueuedConnection);
-                goto done;
+            // Speed handling: at 2x, write every other frame.
+            // At 0.5x, write each frame twice.
+            frameAccumulator += segSpeed;
+            if (segSpeed >= 1.0) {
+                // Fast: skip frames — only write when accumulator reaches threshold
+                if (frameAccumulator < 1.0)
+                    continue;
+                frameAccumulator -= 1.0;
             }
 
-            frameIndex++;
+            // Write frame (possibly multiple times for slow motion)
+            int repeats = (segSpeed < 1.0) ? qRound(1.0 / segSpeed) : 1;
+            for (int r = 0; r < repeats; r++) {
+                if (!encoder.writeFrame(composited)) {
+                    QMetaObject::invokeMethod(this, [this]() {
+                        emit exportError("Failed to encode frame");
+                    }, Qt::QueuedConnection);
+                    goto done;
+                }
+                frameIndex++;
+            }
 
             // Update progress
             if (frameIndex % 5 == 0 || frameIndex >= totalFrames) {

@@ -139,8 +139,8 @@ void GpuScreenRecorder::stopRecording()
     emit stateChanged(m_state);
 
     if (m_process) {
-        // Graceful: SIGINT, then force SIGKILL after timeout
-        m_process->terminate();
+        // Send SIGINT (not SIGTERM) — gpu-screen-recorder handles SIGINT for clean stop
+        ::kill(m_process->processId(), SIGINT);
 
         QTimer::singleShot(STOP_TIMEOUT_MS, this, [this]() {
             if (m_process && m_state == RecordingState::Stopping) {

@@ -3,15 +3,12 @@ import QtQuick.Controls
 import QtQuick.Effects
 import ScreenCopy 1.0
 
-// Video preview with background, padding, border radius, and real Gaussian shadow.
 Item {
     id: root
 
     property alias videoPlayer: player
 
     readonly property string resBase: "qrc:/ScreenCopy/resources/wallpapers/"
-
-    // Padding: paddingScale = 1.0 - (padding / 100) * 0.4
     readonly property real paddingScale: 1.0 - (GlobalSettings.padding / 100.0) * 0.4
     readonly property real videoW: width * paddingScale
     readonly property real videoH: height * paddingScale
@@ -37,17 +34,12 @@ Item {
             smooth: true
         }
 
-        // Video source — rounded rect with video inside, rendered offscreen
-        Rectangle {
-            id: videoSource
+        // Video container
+        Item {
+            id: videoContainer
             width: root.videoW
             height: root.videoH
             anchors.centerIn: parent
-            radius: GlobalSettings.borderRadius
-            color: "transparent"
-            clip: true
-            visible: false  // hidden — MultiEffect draws it
-            layer.enabled: true
 
             Behavior on width { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
@@ -55,8 +47,8 @@ Item {
             VideoPlayer {
                 id: player
                 anchors.fill: parent
+                borderRadius: GlobalSettings.borderRadius
 
-                // Segment transitions are handled in C++ — no QML gap detection needed
                 onPositionChanged: Playback.currentTimeMs = position
                 onDurationChanged: Playback.durationMs = duration
                 onPlayingChanged: {
@@ -66,19 +58,17 @@ Item {
                     }
                 }
             }
-
         }
 
-        // MultiEffect renders the video with proper Gaussian shadow + rounded corners
-        // No need to toggle visibility — decode thread already filters cut-region frames
+        // Shadow
         MultiEffect {
-            anchors.fill: videoSource
-            source: videoSource
+            anchors.fill: videoContainer
+            source: videoContainer
+            visible: root.si > 0.01
 
-            // Real drop shadow
-            shadowEnabled: root.si > 0.01
+            shadowEnabled: true
             shadowColor: "#000000"
-            shadowBlur: root.si          // 0-1, controls blur radius
+            shadowBlur: root.si
             shadowVerticalOffset: root.si * 14
             shadowHorizontalOffset: 0
             shadowOpacity: root.si * 0.7
@@ -86,7 +76,6 @@ Item {
         }
     }
 
-    // "No video" overlay
     Text {
         anchors.centerIn: parent
         text: qsTr("No video loaded")

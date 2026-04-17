@@ -1,25 +1,17 @@
 #include "VideoPlayer.h"
+#include "ProjectTypes.h"
 #include "FFmpegDecoder.h"
 #include <QPainter>
+#include <QPainterPath>
 
 namespace screencopy {
 
-// ── DecodeWorker ────────────────────────────────────────────
+// ── DecodeWorker (kept for trim gap-skipping) ───────────────
 
-DecodeWorker::DecodeWorker(QObject *parent)
-    : QObject(parent)
-{
-}
+DecodeWorker::DecodeWorker(QObject *parent) : QObject(parent) {}
+DecodeWorker::~DecodeWorker() { stop(); }
 
-DecodeWorker::~DecodeWorker()
-{
-    stop();
-}
-
-void DecodeWorker::setDecoder(FFmpegDecoder *decoder)
-{
-    m_decoder = decoder;
-}
+void DecodeWorker::setDecoder(FFmpegDecoder *decoder) { m_decoder = decoder; }
 
 void DecodeWorker::setCutRegions(const QList<CutRegion> &regions)
 {
@@ -30,15 +22,12 @@ void DecodeWorker::setCutRegions(const QList<CutRegion> &regions)
 void DecodeWorker::startFrom(qint64 posMs)
 {
     stop();
-
     m_stopRequested.store(false, std::memory_order_release);
     m_running.store(true, std::memory_order_release);
-
     {
         QMutexLocker lock(&m_mutex);
         m_queue.clear();
     }
-
     m_thread = QThread::create([this, posMs]() { decodeLoop(posMs); });
     m_thread->start();
 }
@@ -47,24 +36,20 @@ void DecodeWorker::stop()
 {
     m_stopRequested.store(true, std::memory_order_release);
     m_spaceAvailable.wakeAll();
-
     if (m_thread) {
         m_thread->wait();
         delete m_thread;
         m_thread = nullptr;
     }
-
     m_running.store(false, std::memory_order_release);
 }
 
 DecodedFrame DecodeWorker::takeFrame()
 {
     QMutexLocker lock(&m_mutex);
-    if (m_queue.isEmpty())
-        return {};
-
+    if (m_queue.isEmpty()) return {};
     auto frame = m_queue.dequeue();
-    m_spaceAvailable.wakeOne(); // wake decode thread if it was waiting for space
+    m_spaceAvailable.wakeOne();
     return frame;
 }
 
@@ -76,7 +61,6 @@ int DecodeWorker::buffered() const
 
 bool DecodeWorker::isInCutRegion(qint64 ms, qint64 *skipToMs) const
 {
-    // m_mutex must be held by caller
     for (const auto &cut : m_cutRegions) {
         if (ms >= cut.startMs && ms < cut.endMs) {
             *skipToMs = cut.endMs;
@@ -89,27 +73,23 @@ bool DecodeWorker::isInCutRegion(qint64 ms, qint64 *skipToMs) const
 void DecodeWorker::decodeLoop(qint64 startMs)
 {
     if (!m_decoder) return;
-
     m_decoder->seekTo(startMs);
 
     while (!m_stopRequested.load(std::memory_order_acquire)) {
-        // Wait if queue is full
         {
             QMutexLocker lock(&m_mutex);
             while (m_queue.size() >= MAX_QUEUE && !m_stopRequested.load(std::memory_order_acquire)) {
                 m_spaceAvailable.wait(&m_mutex, 5);
             }
         }
-
         if (m_stopRequested.load(std::memory_order_acquire)) break;
 
-        // Decode next raw frame (no sws_scale — very fast)
         AVFrame *rawFrame = m_decoder->decodeNextRawFrame();
-        if (!rawFrame) break; // EOF
+        if (!rawFrame) break;
 
         qint64 ptsMs = m_decoder->lastFramePtsMs();
+        m_lastDecodedPtsMs.store(ptsMs, std::memory_order_release);
 
-        // Check if this frame is in a cut region OR approaching one
         qint64 skipTo = 0;
         bool inCut = false;
         bool nearCut = false;
@@ -117,8 +97,6 @@ void DecodeWorker::decodeLoop(qint64 startMs)
             QMutexLocker lock(&m_mutex);
             inCut = isInCutRegion(ptsMs, &skipTo);
             if (!inCut) {
-                // Check if we're approaching a cut region within 100ms
-                // (don't enqueue these last frames — seek ahead early)
                 for (const auto &cut : m_cutRegions) {
                     if (ptsMs < cut.startMs && cut.startMs - ptsMs < 100) {
                         nearCut = true;
@@ -130,7 +108,6 @@ void DecodeWorker::decodeLoop(qint64 startMs)
         }
 
         if (inCut || nearCut) {
-            // Enqueue the current frame if it's before the cut (not in it)
             if (nearCut && rawFrame) {
                 DecodedFrame df;
                 df.rawFrame = rawFrame;
@@ -142,11 +119,7 @@ void DecodeWorker::decodeLoop(qint64 startMs)
                 av_frame_free(&rawFrame);
             }
 
-            // Skip through the cut — no seek/flush, just decode forward
-            // discarding frames. Keeps HW decoder warm. The main thread
-            // displays buffered frames during this time.
             QImage skipFrame = m_decoder->skipTo(skipTo);
-
             if (!skipFrame.isNull()) {
                 DecodedFrame df;
                 df.image = skipFrame;
@@ -157,7 +130,6 @@ void DecodeWorker::decodeLoop(qint64 startMs)
             continue;
         }
 
-        // Enqueue raw frame for the main thread (no conversion yet — fast)
         {
             DecodedFrame df;
             df.rawFrame = rawFrame;
@@ -178,6 +150,7 @@ VideoPlayer::VideoPlayer(QQuickItem *parent)
     , m_scrubDecoder(std::make_unique<FFmpegDecoder>())
 {
     setRenderTarget(QQuickPaintedItem::FramebufferObject);
+    m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_worker.setDecoder(m_decoder.get());
 
     connect(&m_frameTimer, &QTimer::timeout, this, &VideoPlayer::advanceFrame);
@@ -215,7 +188,6 @@ void VideoPlayer::setSource(const QString &path)
         return;
     }
 
-    // Open a separate decoder for scrubbing (used only when paused)
     m_scrubDecoder->open(m_filePath);
 
     m_durationMs = m_decoder->durationMs();
@@ -230,7 +202,7 @@ void VideoPlayer::setSource(const QString &path)
     emit videoSizeChanged();
     emit loadedChanged();
 
-    // Show first frame via scrub decoder
+    // Show first frame
     QImage frame = m_scrubDecoder->decodeNextFrame();
     if (!frame.isNull()) {
         m_currentFrame = frame;
@@ -245,19 +217,16 @@ void VideoPlayer::setPlaying(bool playing)
     m_playing = playing;
 
     if (m_playing && m_loaded) {
-        // Start background decode thread from current position
         m_worker.setCutRegions(m_cutRegions);
         m_worker.startFrom(m_positionMs);
 
-        // Wait briefly for buffer to fill before starting display
-        // (non-blocking spin — just lets the decode thread get ahead)
         QElapsedTimer fillWait;
         fillWait.start();
         while (m_worker.buffered() < 5 && fillWait.elapsed() < 100) {
             QThread::usleep(500);
         }
 
-        int intervalMs = qMax(1, qRound(1000.0 / m_frameRate));
+        int intervalMs = qMax(1, qRound(1000.0 / (m_frameRate * m_playbackSpeed)));
         m_frameTimer.start(intervalMs);
     } else {
         m_frameTimer.stop();
@@ -276,11 +245,9 @@ void VideoPlayer::setPosition(qint64 ms)
     m_positionMs = ms;
 
     if (m_playing) {
-        // Restart decode thread from new position
         m_worker.setCutRegions(m_cutRegions);
         m_worker.startFrom(ms);
     } else {
-        // Scrub: use the separate scrub decoder (main thread, throttled)
         if (m_seekThrottle.isValid() && m_seekThrottle.elapsed() < 66) {
             emit positionChanged();
             return;
@@ -291,13 +258,10 @@ void VideoPlayer::setPosition(qint64 ms)
         qint64 delta = ms - lastPts;
 
         QImage frame;
-        if (delta > 0 && delta < 3000) {
-            // Forward scrub within 3s — skip forward without flush (fast)
+        if (delta > 0 && delta < 3000)
             frame = m_scrubDecoder->skipTo(ms);
-        } else {
-            // Backward or large jump — must seek
+        else
             frame = m_scrubDecoder->decodeFrameAt(ms);
-        }
 
         if (!frame.isNull()) {
             m_currentFrame = frame;
@@ -328,8 +292,22 @@ void VideoPlayer::setSegments(const QVariantList &segments)
             m_cutRegions.append({gapStart, gapEnd});
     }
 
-    // Update worker if playing
     m_worker.setCutRegions(m_cutRegions);
+}
+
+void VideoPlayer::setPlaybackSpeed(double speed)
+{
+    speed = qBound(kMinPlaybackSpeed, speed, kMaxPlaybackSpeed);
+    if (qFuzzyCompare(m_playbackSpeed, speed)) return;
+
+    m_playbackSpeed = speed;
+
+    if (m_playing && m_loaded) {
+        int intervalMs = qMax(1, qRound(1000.0 / (m_frameRate * m_playbackSpeed)));
+        m_frameTimer.setInterval(intervalMs);
+    }
+
+    emit playbackSpeedChanged();
 }
 
 void VideoPlayer::play()
@@ -371,7 +349,6 @@ void VideoPlayer::advanceFrame()
         return;
     }
 
-    // Convert raw AVFrame to QImage (one frame, ~3-5ms)
     if (frame.rawFrame) {
         m_currentFrame = m_scrubDecoder->frameToImage(frame.rawFrame);
         av_frame_free(&frame.rawFrame);
@@ -382,17 +359,25 @@ void VideoPlayer::advanceFrame()
     m_positionMs = frame.ptsMs;
     update();
 
-    // Throttle position updates to ~15fps
     if (!m_seekThrottle.isValid() || m_seekThrottle.elapsed() > 66) {
         m_seekThrottle.start();
         emit positionChanged();
     }
 }
 
+void VideoPlayer::setBorderRadius(double r)
+{
+    if (qFuzzyCompare(m_borderRadius, r)) return;
+    m_borderRadius = r;
+    update();
+    emit borderRadiusChanged();
+}
+
 void VideoPlayer::paint(QPainter *painter)
 {
     if (m_currentFrame.isNull()) return;
     painter->setRenderHint(QPainter::SmoothPixmapTransform);
+    painter->setRenderHint(QPainter::Antialiasing);
 
     if (m_targetRect.isEmpty()) {
         QSizeF itemSize(width(), height());
@@ -404,6 +389,14 @@ void VideoPlayer::paint(QPainter *painter)
             scaled.width(), scaled.height()
         );
     }
+
+    if (m_borderRadius > 0.1) {
+        // Clip to rounded rect using QPainterPath
+        QPainterPath path;
+        path.addRoundedRect(m_targetRect, m_borderRadius, m_borderRadius);
+        painter->setClipPath(path);
+    }
+
     painter->drawImage(m_targetRect, m_currentFrame);
 }
 

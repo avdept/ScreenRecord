@@ -171,6 +171,8 @@ Item {
                     required property var displayStartMs
                     required property var displayEndMs
                     required property var durationMs
+                    required property var speed
+                    required property bool selected
 
                     x: root.displayMsToX(displayStartMs)
                     width: Math.max(4, root.displayMsToX(displayEndMs) - x)
@@ -179,23 +181,41 @@ Item {
                     anchors.topMargin: 6
                     anchors.bottomMargin: 6
                     radius: 0
-                    color: segMouseArea.containsMouse
-                           ? Qt.rgba(52/255, 178/255, 123/255, 0.22)
-                           : Qt.rgba(52/255, 178/255, 123/255, 0.12)
-                    border.width: 1
-                    border.color: segMouseArea.containsMouse
-                                  ? Qt.rgba(52/255, 178/255, 123/255, 0.5)
-                                  : Qt.rgba(52/255, 178/255, 123/255, 0.25)
+                    color: {
+                        if (selected)
+                            return Qt.rgba(52/255, 178/255, 123/255, 0.35)
+                        if (segMouseArea.containsMouse)
+                            return Qt.rgba(52/255, 178/255, 123/255, 0.22)
+                        return Qt.rgba(52/255, 178/255, 123/255, 0.12)
+                    }
+                    border.width: selected ? 2 : 1
+                    border.color: {
+                        if (selected)
+                            return root.green
+                        if (segMouseArea.containsMouse)
+                            return Qt.rgba(52/255, 178/255, 123/255, 0.5)
+                        return Qt.rgba(52/255, 178/255, 123/255, 0.25)
+                    }
 
                     Behavior on color { ColorAnimation { duration: 150 } }
                     Behavior on border.color { ColorAnimation { duration: 150 } }
                     Behavior on x { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                     Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
 
+                    // Speed label (when not 1x)
+                    Text {
+                        anchors.centerIn: parent
+                        visible: speed !== 1.0 && parent.width > 40
+                        text: speed.toFixed(2) + "x"
+                        font.pixelSize: 9
+                        font.weight: Font.Medium
+                        color: "#f59e0b"
+                    }
+
                     // Duration label
                     Text {
                         anchors.centerIn: parent
-                        visible: parent.width > 60
+                        visible: speed === 1.0 && parent.width > 60
                         text: formatTime(durationMs)
                         font.pixelSize: 8
                         font.family: "monospace"
@@ -233,7 +253,12 @@ Item {
                         id: segMouseArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        acceptedButtons: Qt.NoButton
+                        cursorShape: root.activeTool === "select" ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: {
+                            if (root.activeTool === "select") {
+                                TrimModel.selectedIndex = index
+                            }
+                        }
                     }
                 }
             }

@@ -15,7 +15,6 @@ Item {
 
     Flickable {
         anchors.fill: parent
-        anchors.margins: 16
         contentHeight: settingsCol.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
@@ -25,9 +24,123 @@ Item {
             width: parent.width
             spacing: 12
 
-            // --- SELECTED REGION SETTINGS (shown when an effect region is selected) ---
+            // --- SELECTED SEGMENT SETTINGS ---
+            Item {
+                visible: TrimModel.selectedIndex >= 0
+                Layout.fillWidth: true
+                implicitHeight: segPropsCol.implicitHeight
+
+                ColumnLayout {
+                    id: segPropsCol
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    spacing: 10
+
+                    // Header with title and close button
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Text {
+                            text: qsTr("Segment Properties")
+                            font.pixelSize: 12
+                            font.weight: Font.Medium
+                            color: "#e2e8f0"
+                            Layout.fillWidth: true
+                        }
+
+                        // Close button
+                        Rectangle {
+                            width: 20
+                            height: 20
+                            radius: 4
+                            color: closeHover.hovered ? Qt.rgba(1, 1, 1, 0.1) : "transparent"
+
+                            Image {
+                                anchors.centerIn: parent
+                                width: 12; height: 12
+                                source: "qrc:/ScreenCopy/resources/icons/x-close.svg"
+                                sourceSize: Qt.size(48, 48)
+                                fillMode: Image.PreserveAspectFit
+                                opacity: closeHover.hovered ? 0.9 : 0.4
+                            }
+
+                            HoverHandler { id: closeHover }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: TrimModel.clearSelection()
+                            }
+                        }
+                    }
+
+                    // Speed section
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: speedCol.implicitHeight + 20
+                        radius: 4
+                        color: Qt.rgba(1, 1, 1, 0.02)
+                        border.width: 1
+                        border.color: Qt.rgba(1, 1, 1, 0.08)
+
+                        ColumnLayout {
+                            id: speedCol
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text {
+                                text: qsTr("Speed")
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: "#94a3b8"
+                            }
+
+                    GridLayout {
+                        columns: 3
+                        columnSpacing: 4
+                        rowSpacing: 4
+                        Layout.fillWidth: true
+
+                        Repeater {
+                            model: [0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
+
+                            Rectangle {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: 26
+                                radius: 4
+                                border.width: 1
+                                property bool isActive: Math.abs(TrimModel.selectedSpeed - modelData) < 0.01
+                                color: isActive ? root.green : Qt.rgba(1, 1, 1, 0.05)
+                                border.color: isActive ? root.green : Qt.rgba(1, 1, 1, 0.08)
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: modelData + "x"
+                                    font.pixelSize: 10
+                                    font.weight: Font.Medium
+                                    color: isActive ? "white" : "#94a3b8"
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: TrimModel.selectedSpeed = modelData
+                                }
+                            }
+                        }
+                    }
+                        }
+                    }
+                }
+            }
+
+            // --- SELECTED EFFECT REGION SETTINGS (shown when an effect region is selected) ---
             SettingsSection {
-                visible: EffectRegions.selectedId >= 0
+                visible: EffectRegions.selectedId >= 0 && TrimModel.selectedIndex < 0
                 title: {
                     var t = EffectRegions.selectedType
                     if (t === 0) return qsTr("Zoom Settings")
@@ -107,7 +220,7 @@ Item {
                                 label: qsTr("Speed")
                                 value: EffectRegions.selectedSettings.speed || 1.0
                                 onMoved: function(v) { EffectRegions.updateSelectedSetting("speed", v) }
-                                from: 0.25; to: 4.0; stepSize: 0.25
+                                from: 0.5; to: 4.0; stepSize: 0.25
                                 accentColor: "#f59e0b"
                             }
                         }
@@ -139,7 +252,7 @@ Item {
 
             // --- EFFECTS SECTION (global, hidden when region selected) ---
             SettingsSection {
-                visible: EffectRegions.selectedId < 0
+                visible: EffectRegions.selectedId < 0 && TrimModel.selectedIndex < 0
                 title: qsTr("Effects")
                 accentColor: root.green
 
@@ -178,7 +291,7 @@ Item {
 
             // --- BACKGROUND SECTION (global) ---
             SettingsSection {
-                visible: EffectRegions.selectedId < 0
+                visible: EffectRegions.selectedId < 0 && TrimModel.selectedIndex < 0
                 title: qsTr("Background")
                 accentColor: root.green
 
@@ -355,7 +468,7 @@ Item {
 
             // --- EXPORT SECTION (global) ---
             SettingsSection {
-                visible: EffectRegions.selectedId < 0
+                visible: EffectRegions.selectedId < 0 && TrimModel.selectedIndex < 0
                 title: qsTr("Export")
                 accentColor: root.green
 

@@ -50,6 +50,7 @@ public:
     DecodedFrame takeFrame();
     int buffered() const;
     bool isRunning() const { return m_running.load(std::memory_order_acquire); }
+    qint64 lastDecodedPtsMs() const { return m_lastDecodedPtsMs.load(std::memory_order_acquire); }
 
 private:
     void decodeLoop(qint64 startMs);
@@ -57,6 +58,7 @@ private:
 
     FFmpegDecoder *m_decoder = nullptr;
     QList<CutRegion> m_cutRegions;
+    std::atomic<qint64> m_lastDecodedPtsMs{0}; // actual last frame PTS (may differ from container duration)
 
     static constexpr int MAX_QUEUE = 180;
     QQueue<DecodedFrame> m_queue;
@@ -79,6 +81,8 @@ class VideoPlayer : public QQuickPaintedItem
     Q_PROPERTY(int videoWidth READ videoWidth NOTIFY videoSizeChanged)
     Q_PROPERTY(int videoHeight READ videoHeight NOTIFY videoSizeChanged)
     Q_PROPERTY(bool loaded READ isLoaded NOTIFY loadedChanged)
+    Q_PROPERTY(double playbackSpeed READ playbackSpeed WRITE setPlaybackSpeed NOTIFY playbackSpeedChanged)
+    Q_PROPERTY(double borderRadius READ borderRadius WRITE setBorderRadius NOTIFY borderRadiusChanged)
 
 public:
     explicit VideoPlayer(QQuickItem *parent = nullptr);
@@ -101,6 +105,12 @@ public:
     int videoHeight() const { return m_videoHeight; }
     bool isLoaded() const { return m_loaded; }
 
+    double playbackSpeed() const { return m_playbackSpeed; }
+    void setPlaybackSpeed(double speed);
+
+    double borderRadius() const { return m_borderRadius; }
+    void setBorderRadius(double r);
+
     Q_INVOKABLE void setSegments(const QVariantList &segments);
 
     Q_INVOKABLE void play();
@@ -118,6 +128,8 @@ signals:
     void frameRateChanged();
     void videoSizeChanged();
     void loadedChanged();
+    void playbackSpeedChanged();
+    void borderRadiusChanged();
     void ended();
 
 private:
@@ -139,6 +151,8 @@ private:
     qint64 m_positionMs = 0;
     qint64 m_durationMs = 0;
     double m_frameRate = 30.0;
+    double m_playbackSpeed = 1.0;
+    double m_borderRadius = 0.0;
     int m_videoWidth = 0;
     int m_videoHeight = 0;
 
