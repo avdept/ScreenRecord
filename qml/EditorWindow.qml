@@ -131,7 +131,7 @@ ApplicationWindow {
             }
 
             EditorTopBarButton {
-                iconSource: "qrc:/ScreenCopy/resources/icons/folder-open.svg"
+                iconSource: "qrc:/qt/qml/ScreenCopy/resources/icons/folder-open.svg"
                 text: qsTr("Load Project")
             }
 
@@ -214,7 +214,7 @@ ApplicationWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: false
-                Layout.preferredHeight: 100
+                Layout.preferredHeight: 140
                 radius: 4
                 color: Theme.backgroundDark
                 border.width: 1
