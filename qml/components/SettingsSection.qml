@@ -51,7 +51,7 @@ Item {
 
                     // Chevron
                     Image {
-                        source: "qrc:/ScreenCopy/resources/icons/chevron-down.svg"
+                        source: "qrc:/qt/qml/ScreenCopy/resources/icons/chevron-down.svg"
                         sourceSize: Qt.size(12, 12)
                         width: 12; height: 12
                         fillMode: Image.PreserveAspectFit

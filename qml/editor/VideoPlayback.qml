@@ -7,7 +7,7 @@ Item {
 
     property alias videoPlayer: player
 
-    readonly property string resBase: "qrc:/ScreenCopy/resources/wallpapers/"
+    readonly property string resBase: "qrc:/qt/qml/ScreenCopy/resources/wallpapers/"
     readonly property real paddingScale: 1.0 - (GlobalSettings.padding / 100.0) * 0.4
     readonly property real videoW: width * paddingScale
     readonly property real videoH: height * paddingScale

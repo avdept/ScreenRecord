@@ -10,7 +10,7 @@ Item {
     signal seekRequested(real ms)
 
     readonly property color green: Theme.green
-    readonly property string iconBase: "qrc:/ScreenCopy/resources/icons/"
+    readonly property string iconBase: "qrc:/qt/qml/ScreenCopy/resources/icons/"
 
     // Current active tool
     property string activeTool: "select"  // "select" or "trim"

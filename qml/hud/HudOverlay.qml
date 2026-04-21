@@ -9,7 +9,7 @@ Item {
     height: 160
 
     // Icon path helper
-    readonly property string iconBase: "qrc:/ScreenCopy/resources/icons/"
+    readonly property string iconBase: "qrc:/qt/qml/ScreenCopy/resources/icons/"
 
     // Background bar
     Rectangle {

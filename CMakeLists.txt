@@ -20,6 +20,8 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
 # Optional Qt6 modules
 find_package(Qt6 COMPONENTS DBus WaylandClient QUIET)
 
+qt_policy(SET QTP0001 NEW)
+
 # Find FFmpeg via pkg-config
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(AVCODEC REQUIRED IMPORTED_TARGET libavcodec)

@@ -106,7 +106,7 @@ QImage CompositeFilter::loadWallpaper(const QString &wpName, const QSize &size)
     if (auto *cached = m_wallpaperCache.object(key))
         return *cached;
 
-    QString path = QString(":/ScreenCopy/resources/wallpapers/%1.jpg").arg(wpName);
+    QString path = QString(":/qt/qml/ScreenCopy/resources/wallpapers/%1.jpg").arg(wpName);
     QImage img(path);
     if (img.isNull())
         return {};

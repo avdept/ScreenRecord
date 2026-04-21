@@ -59,7 +59,7 @@ Item {
                             Image {
                                 anchors.centerIn: parent
                                 width: 12; height: 12
-                                source: "qrc:/ScreenCopy/resources/icons/x-close.svg"
+                                source: "qrc:/qt/qml/ScreenCopy/resources/icons/x-close.svg"
                                 sourceSize: Qt.size(48, 48)
                                 fillMode: Image.PreserveAspectFit
                                 opacity: closeHover.hovered ? 0.9 : 0.4
@@ -425,7 +425,7 @@ Item {
                                 Image {
                                     anchors.fill: parent
                                     anchors.margins: 1
-                                    source: "qrc:/ScreenCopy/resources/wallpapers/" + wpName + ".jpg"
+                                    source: "qrc:/qt/qml/ScreenCopy/resources/wallpapers/" + wpName + ".jpg"
                                     fillMode: Image.PreserveAspectCrop
                                     smooth: true
                                     sourceSize: Qt.size(80, 80) // small thumbnail

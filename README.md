@@ -14,14 +14,14 @@ Package names shown for Arch Linux — adjust for your distro.
 sudo pacman -S qt6-base qt6-declarative qt6-multimedia qt6-wayland ffmpeg pipewire libpipewire gpu-screen-recorder cmake pkg-config gcc
 ```
 
-#### Build
+#### Commands
 
-```bash
-make build
-```
+| Command | Description |
+| --- | --- |
+| `make build` | Configure (first time) and compile a debug build into `build/default/` |
+| `make run` | Build then launch the app |
+| `make release` | Configure and compile a release build into `build/release/` |
+| `make test` | Run the test suite via `ctest` |
+| `make clean` | Remove the `build/` directory |
 
-#### Run
-
-```bash
-make run
-```
+The first `make build` runs `cmake --preset default` automatically; subsequent builds skip reconfiguration.

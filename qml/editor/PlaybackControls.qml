@@ -38,8 +38,8 @@ Rectangle {
             Image {
                 anchors.centerIn: parent
                 source: Playback.playing
-                    ? "qrc:/ScreenCopy/resources/icons/pause-white.svg"
-                    : "qrc:/ScreenCopy/resources/icons/play-black.svg"
+                    ? "qrc:/qt/qml/ScreenCopy/resources/icons/pause-white.svg"
+                    : "qrc:/qt/qml/ScreenCopy/resources/icons/play-black.svg"
                 sourceSize: Qt.size(14, 14)
             }
 
