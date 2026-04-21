@@ -1,6 +1,8 @@
 add_library(screencopy_renderer STATIC
     VideoPlayer.h
     VideoPlayer.cpp
+    ShadowRenderer.h
+    ShadowRenderer.cpp
 )
 
 target_link_libraries(screencopy_renderer PUBLIC

@@ -14,6 +14,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     QuickControls2
     Widgets
     Multimedia
+    Test
 )
 
 # Optional Qt6 modules
@@ -152,3 +153,6 @@ qt_add_qml_module(screencopy
 )
 
 install(TARGETS screencopy RUNTIME DESTINATION bin)
+
+enable_testing()
+add_subdirectory(tests)
