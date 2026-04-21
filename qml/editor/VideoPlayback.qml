@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Effects
 import ScreenCopy 1.0
 
 Item {
@@ -34,6 +33,18 @@ Item {
             smooth: true
         }
 
+        // Shadow — uses same algorithm as export (CompositeFilter)
+        ShadowRenderer {
+            anchors.fill: parent
+            visible: root.si > 0.01
+            shadowIntensity: root.si
+            borderRadius: GlobalSettings.borderRadius
+            videoWidth: videoContainer.width
+            videoHeight: videoContainer.height
+            videoX: videoContainer.x
+            videoY: videoContainer.y
+        }
+
         // Video container
         Item {
             id: videoContainer
@@ -58,21 +69,6 @@ Item {
                     }
                 }
             }
-        }
-
-        // Shadow
-        MultiEffect {
-            anchors.fill: videoContainer
-            source: videoContainer
-            visible: root.si > 0.01
-
-            shadowEnabled: true
-            shadowColor: Theme.black
-            shadowBlur: root.si
-            shadowVerticalOffset: root.si * 14
-            shadowHorizontalOffset: 0
-            shadowOpacity: root.si * 0.7
-            shadowScale: 1.0 + root.si * 0.05
         }
     }
 

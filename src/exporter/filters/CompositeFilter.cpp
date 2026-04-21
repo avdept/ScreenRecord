@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QtMath>
+#include <algorithm>
 
 namespace screencopy {
 
@@ -69,9 +70,14 @@ QImage CompositeFilter::process(const QImage &input, const FilterContext &ctx)
 
     // --- 4. Shadow ---
     if (ed.shadowIntensity > 0.01) {
-        QImage shadow = createShadow(videoRounded.size(), radius, ed.shadowIntensity);
         double si = ed.shadowIntensity;
-        double shadowOffsetY = si * 14.0;
+        // Scale shadow to match QML MultiEffect shadowScale: 1.0 + si * 0.05
+        double shadowScale = 1.0 + si * 0.05;
+        QSize scaledSize(qRound(vidW * shadowScale), qRound(vidH * shadowScale));
+
+        double refSize = std::min(vidW, vidH);
+        QImage shadow = createShadow(scaledSize, radius * shadowScale, si, refSize);
+        double shadowOffsetY = si * refSize * 0.025;
 
         QPainter sp(&canvas);
         sp.setRenderHint(QPainter::SmoothPixmapTransform);
@@ -110,11 +116,12 @@ QImage CompositeFilter::loadWallpaper(const QString &wpName, const QSize &size)
     return *scaled;
 }
 
-QImage CompositeFilter::createShadow(const QSize &videoSize, double radius, double intensity)
+QImage CompositeFilter::createShadow(const QSize &videoSize, double radius, double intensity, double refSize)
 {
-    // Expand shadow canvas to accommodate blur spread
-    int blurRadius = qRound(intensity * 40);
-    int expand = blurRadius * 2;
+    // Scale blur radius with video dimensions to match QML MultiEffect appearance
+    int blurRadius = qRound(intensity * refSize * 0.035);
+    // 3-pass box blur spreads up to 3*radius, so we need 3*blurRadius padding per side
+    int expand = blurRadius * 6;
     QSize shadowSize(videoSize.width() + expand, videoSize.height() + expand);
 
     QImage shadow(shadowSize, QImage::Format_ARGB32_Premultiplied);

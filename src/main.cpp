@@ -18,6 +18,7 @@
 #include "platform/PlatformIntegration.h"
 #include "i18n/I18nManager.h"
 #include "renderer/VideoPlayer.h"
+#include "renderer/ShadowRenderer.h"
 #include "exporter/VideoExporter.h"
 
 int main(int argc, char *argv[])
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
 
     // Register QML types
     qmlRegisterType<screencopy::VideoPlayer>("ScreenCopy", 1, 0, "VideoPlayer");
+    qmlRegisterType<screencopy::ShadowRenderer>("ScreenCopy", 1, 0, "ShadowRenderer");
 
     // Register singletons — organized by domain
     // App

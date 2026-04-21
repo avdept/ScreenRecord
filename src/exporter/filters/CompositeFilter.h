@@ -25,7 +25,7 @@ public:
 
 private:
     QImage loadWallpaper(const QString &wpName, const QSize &size);
-    QImage createShadow(const QSize &videoSize, double radius, double intensity);
+    QImage createShadow(const QSize &videoSize, double radius, double intensity, double refSize);
     void blurImage(QImage &image, int radius);
 
     QCache<QString, QImage> m_wallpaperCache;
