@@ -71,37 +71,49 @@ Item {
                 }
             }
 
-            // Source selector button
-            HudGroupButton {
-                enabled: !Recorder.recording
-                opacity: enabled ? 1.0 : 0.5
+            // Capture mode group
+            Rectangle {
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: captureModeRow.implicitWidth + 8
+                implicitHeight: 34
+                radius: 8
+                color: Qt.rgba(1, 1, 1, 0.05)
 
-                contentItem: RowLayout {
-                    spacing: 4
+                RowLayout {
+                    id: captureModeRow
+                    anchors.centerIn: parent
+                    spacing: 2
 
-                    Item {
-                        Layout.preferredWidth: 18
-                        Layout.preferredHeight: 18
-                        Image {
-                            anchors.centerIn: parent
-                            width: 18; height: 18
-                            source: iconBase + "monitor.svg"
-                            sourceSize: Qt.size(48, 48)
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
-                            opacity: 0.8
-                        }
+                    HudIconButton {
+                        iconSource: iconBase + "monitor.svg"
+                        active: Recorder.captureMode === RecordingController.FullScreen
+                        enabled: !Recorder.recording
+                        onClicked: Recorder.selectFullScreen()
+                        ToolTip.text: Recorder.captureMode === RecordingController.FullScreen && Recorder.hasSelectedSource
+                            ? Recorder.selectedSource
+                            : qsTr("Full Screen")
                     }
-                    Text {
-                        text: Recorder.hasSelectedSource ? Recorder.selectedSource : qsTr("Select")
-                        font.pixelSize: 11
-                        color: Qt.rgba(1, 1, 1, 0.7)
-                        elide: Text.ElideRight
-                        Layout.maximumWidth: 72
+
+                    HudIconButton {
+                        iconSource: iconBase + "window.svg"
+                        active: Recorder.captureMode === RecordingController.Window
+                        enabled: !Recorder.recording
+                        onClicked: Recorder.selectWindow()
+                        ToolTip.text: Recorder.captureMode === RecordingController.Window && Recorder.hasSelectedSource
+                            ? Recorder.selectedSource
+                            : qsTr("Window")
+                    }
+
+                    HudIconButton {
+                        iconSource: iconBase + "cursor-select.svg"
+                        active: Recorder.captureMode === RecordingController.Area
+                        enabled: !Recorder.recording
+                        onClicked: Recorder.beginAreaSelection()
+                        ToolTip.text: Recorder.captureMode === RecordingController.Area && Recorder.hasSelectedSource
+                            ? Recorder.selectedSource
+                            : qsTr("Area")
                     }
                 }
-
-                onClicked: Recorder.openSourceSelector()
             }
 
             // Audio controls group

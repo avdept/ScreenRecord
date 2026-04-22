@@ -59,6 +59,14 @@ add_subdirectory(src/app)
 
 # Main executable
 qt_add_executable(screencopy src/main.cpp)
+set_target_properties(screencopy PROPERTIES
+    OUTPUT_NAME screencopy-app
+    MACOSX_BUNDLE TRUE
+    MACOSX_BUNDLE_BUNDLE_NAME "ScreenCopy"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.screencopy.app"
+    MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+)
 
 target_link_libraries(screencopy PRIVATE
     screencopy_app
@@ -84,6 +92,7 @@ set(QML_FILES
     qml/hud/HudIconButton.qml
     qml/hud/HudGroupButton.qml
     qml/hud/DeviceSelector.qml
+    qml/hud/AreaSelectionOverlay.qml
     qml/editor/VideoPlayback.qml
     qml/editor/SettingsPanel.qml
     qml/editor/PlaybackControls.qml
@@ -134,6 +143,7 @@ qt_add_qml_module(screencopy
         resources/icons/pause-white.svg
         resources/icons/scissors.svg
         resources/icons/cursor-select.svg
+        resources/icons/window.svg
         resources/wallpapers/wallpaper1.jpg
         resources/wallpapers/wallpaper2.jpg
         resources/wallpapers/wallpaper3.jpg
@@ -154,7 +164,10 @@ qt_add_qml_module(screencopy
         resources/wallpapers/wallpaper18.jpg
 )
 
-install(TARGETS screencopy RUNTIME DESTINATION bin)
+install(TARGETS screencopy
+    RUNTIME DESTINATION bin
+    BUNDLE DESTINATION .
+)
 
 enable_testing()
 add_subdirectory(tests)

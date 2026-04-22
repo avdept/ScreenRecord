@@ -32,6 +32,10 @@ public:
     // Source selection — shows the native screen/window picker.
     Q_INVOKABLE virtual void requestSourceSelection() = 0;
 
+    // Mode-specific source selection
+    Q_INVOKABLE virtual void selectFullScreen() { requestSourceSelection(); }
+    Q_INVOKABLE virtual void selectWindow() { requestSourceSelection(); }
+
     // Recording — platform-specific screen capture.
     Q_INVOKABLE virtual void startRecording(const QString &outputPath);
     Q_INVOKABLE virtual void stopRecording();

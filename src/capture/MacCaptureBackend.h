@@ -1,31 +1,22 @@
 #pragma once
 
 #include "CaptureBackend.h"
-#include <QProcess>
-#include <QRect>
-#include <QTimer>
+#include "GpuScreenRecorder.h" // for RecordingOptions
 
 namespace screencopy {
 
 class PlatformIntegration;
 
-struct RecordingOptions {
-    bool systemAudio = true;
-    bool microphone = false;
-    int frameRate = 60;
-    QString windowMode = "portal";  // "portal", "focused", or a window/display ID
-    QRect captureRegion;            // non-null for area capture
-};
-
-class GpuScreenRecorder : public CaptureBackend
+class MacCaptureBackend : public CaptureBackend
 {
     Q_OBJECT
 
 public:
-    explicit GpuScreenRecorder(PlatformIntegration *platform, QObject *parent = nullptr);
-    ~GpuScreenRecorder() override;
+    explicit MacCaptureBackend(PlatformIntegration *platform, QObject *parent = nullptr);
+    ~MacCaptureBackend() override;
 
     RecordingState state() const override { return m_state; }
+
     void startRecording(const QString &outputPath) override;
     void startRecording(const QString &outputPath, const RecordingOptions &options);
     void stopRecording() override;
@@ -34,17 +25,18 @@ public:
     void cancelRecording() override;
     bool isAvailable() const override;
 
-    QString outputPath() const { return m_outputPath; }
+    void finishRecording(const QString &path);
 
 private:
-    void killIfRunning();
+    void startStream(void *retainedFilter, const RecordingOptions &options, const QString &outputPath);
+    void cleanup();
 
     PlatformIntegration *m_platform = nullptr;
-    QProcess *m_process = nullptr;
     RecordingState m_state = RecordingState::Idle;
     QString m_outputPath;
-    QTimer m_startTimeout;
-    QTimer *m_pollTimer = nullptr;
+    void *m_stream = nullptr;          // SCStream*
+    void *m_recordingOutput = nullptr; // SCRecordingOutput*
+    void *m_delegate = nullptr;        // ObjC delegate
 };
 
 } // namespace screencopy
