@@ -1,4 +1,4 @@
-# Screencopy
+# ScreenRecord
 
 Screen recording and editing application built with Qt6 and FFmpeg.
 
