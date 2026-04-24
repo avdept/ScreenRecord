@@ -21,15 +21,35 @@ target_link_libraries(screencopy_capture PUBLIC
 target_include_directories(screencopy_capture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(APPLE)
-    enable_language(OBJCXX)
-    target_sources(screencopy_capture PRIVATE MacCaptureBackend.h MacCaptureBackend.mm)
-    target_link_libraries(screencopy_capture PRIVATE
-        "-weak_framework ScreenCaptureKit"
-        "-framework AppKit"
+    target_sources(screencopy_capture PRIVATE
+        MacCaptureBackend.h
+        MacCaptureBackend.cpp
+        MacCaptureBridge.h
+    )
+
+    # Swift recorder — linked PRIVATE via C ABI (MacCaptureBridge.h).
+    add_library(screencopy_capture_swift STATIC
+        mac/RecordingBridge.swift
+        mac/ScreenRecorder.swift
+    )
+    set_target_properties(screencopy_capture_swift PROPERTIES
+        Swift_MODULE_NAME ScreenCaptureRecorder
+        AUTOMOC OFF
+        AUTORCC OFF
+    )
+    target_compile_options(screencopy_capture_swift PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:SHELL:-import-objc-header ${CMAKE_CURRENT_SOURCE_DIR}/mac/CaptureBridging-Header.h>"
+    )
+    target_link_libraries(screencopy_capture_swift PRIVATE
+        "-framework ScreenCaptureKit"
         "-framework AVFoundation"
+        "-framework AppKit"
         "-framework CoreMedia"
     )
-    set_source_files_properties(MacCaptureBackend.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
+
+    target_link_libraries(screencopy_capture PRIVATE
+        screencopy_capture_swift
+    )
 endif()
 
 if(PIPEWIRE_FOUND)

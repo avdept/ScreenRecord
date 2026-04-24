@@ -6,6 +6,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+# Enable Swift for macOS — the native ScreenCaptureKit/AVFoundation code lives
+# in Swift modules that are linked into the C++ libraries via a C ABI bridge.
+if(APPLE)
+    # Floor: ScreenCaptureKit requires 12.3. SCRecordingOutput needs 15.0 —
+    # guarded at runtime. We pick 14.0 as a practical floor (matches Qt 6.5+
+    # deployment) while still supporting users on macOS 14 via fallbacks.
+    if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "14.0")
+    endif()
+    enable_language(Swift)
+endif()
+
 # Find Qt6 modules
 find_package(Qt6 6.5 REQUIRED COMPONENTS
     Core
@@ -66,7 +78,41 @@ set_target_properties(screencopy PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.screencopy.app"
     MACOSX_BUNDLE_BUNDLE_VERSION "0.1.0"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1.0"
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/resources/Info.plist.in"
+    # Force C++ linker for the final executable — Qt/Clang linker flags aren't
+    # understood by swiftc, and CMake otherwise defaults to swiftc when any
+    # transitively-linked library contains Swift objects.
+    LINKER_LANGUAGE CXX
 )
+
+# Sign the app bundle with a stable identity so macOS TCC retains permissions
+# across rebuilds. Defaults to a self-signed "ScreenCopyDev" cert that each
+# developer creates once locally (see README). Override with -DCODESIGN_IDENTITY=...
+# Falls back to ad-hoc signing (-) with a warning if the cert isn't found.
+if(APPLE)
+    if(NOT DEFINED CODESIGN_IDENTITY)
+        set(CODESIGN_IDENTITY "ScreenCopyDev")
+    endif()
+
+    execute_process(
+        COMMAND security find-identity -v -p codesigning
+        OUTPUT_VARIABLE _codesign_identities
+        ERROR_QUIET
+    )
+    if(NOT "${_codesign_identities}" MATCHES "${CODESIGN_IDENTITY}")
+        message(WARNING
+            "Code signing identity '${CODESIGN_IDENTITY}' not found — falling back to ad-hoc. "
+            "TCC permissions (Screen Recording, etc.) won't persist across rebuilds. "
+            "See README for one-time setup.")
+        set(CODESIGN_IDENTITY "-")
+    endif()
+
+    add_custom_command(TARGET screencopy POST_BUILD
+        COMMAND codesign --force --deep --sign "${CODESIGN_IDENTITY}" "$<TARGET_BUNDLE_DIR:screencopy>"
+        COMMENT "Codesigning screencopy with: ${CODESIGN_IDENTITY}"
+        VERBATIM
+    )
+endif()
 
 target_link_libraries(screencopy PRIVATE
     screencopy_app

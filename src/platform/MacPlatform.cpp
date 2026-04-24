@@ -1,5 +1,6 @@
 #include "MacPlatform.h"
 #include "MacScreenCapture.h"
+#include "MacScreenCaptureBridge.h"
 
 #include <QWindow>
 
@@ -46,6 +47,12 @@ void MacPlatform::applyHudWindowRulesImpl(QWindow *window)
                      | Qt::FramelessWindowHint
                      | Qt::WindowStaysOnTopHint
                      | Qt::Tool);
+
+    // Promote to status-bar level + all-Spaces collection behavior so the HUD
+    // stays accessible when the user records a fullscreen app. Qt's
+    // WindowStaysOnTopHint alone isn't enough on macOS.
+    if (WId winId = window->winId())
+        sc_hud_apply_window_rules(reinterpret_cast<void *>(winId));
 }
 
 } // namespace screencopy

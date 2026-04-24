@@ -235,7 +235,8 @@ void RecordingController::startRecording()
     auto dir = m_platform ? m_platform->recordingsDir() : "/tmp";
     QDir().mkpath(dir);
     auto timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-    m_outputPath = QString("%1/recording-%2.mp4").arg(dir, timestamp);
+    QString ext = backend->preferredExtension();
+    m_outputPath = QString("%1/recording-%2.%3").arg(dir, timestamp, ext);
 
     // Configure recording options from current toggle state
     RecordingOptions options;
@@ -251,11 +252,16 @@ void RecordingController::startRecording()
     if (m_captureMode == Area && !m_areaRect.isNull())
         options.captureRegion = m_areaRect;
 
-    // Use the appropriate start overload
-    if (backend == m_gpuRecorder)
+    // Use the platform-specific overload that accepts RecordingOptions.
+    // On Linux, m_captureBackend is always nullptr — only the gpu-recorder path runs.
+    if (backend == m_gpuRecorder) {
         m_gpuRecorder->startRecording(m_outputPath, options);
-    else
+    }
+#ifdef Q_OS_MACOS
+    else {
         static_cast<MacCaptureBackend *>(m_captureBackend)->startRecording(m_outputPath, options);
+    }
+#endif
 }
 
 void RecordingController::stopRecording()
