@@ -1,12 +1,15 @@
 #pragma once
 
 #include <QObject>
+#include <QRect>
 #include <QTimer>
 #include <QElapsedTimer>
 
 namespace screencopy {
 
+class CaptureBackend;
 class GpuScreenRecorder;
+class MacCaptureBackend;
 class PlatformIntegration;
 class CursorTelemetry;
 
@@ -14,6 +17,16 @@ class RecordingController : public QObject
 {
     Q_OBJECT
 
+public:
+    enum CaptureMode {
+        None,
+        FullScreen,
+        Window,
+        Area
+    };
+    Q_ENUM(CaptureMode)
+
+private:
     Q_PROPERTY(bool recording READ isRecording NOTIFY recordingChanged)
     Q_PROPERTY(bool paused READ isPaused NOTIFY pausedChanged)
     Q_PROPERTY(int elapsedSeconds READ elapsedSeconds NOTIFY elapsedSecondsChanged)
@@ -25,11 +38,13 @@ class RecordingController : public QObject
     Q_PROPERTY(bool hasSelectedSource READ hasSelectedSource NOTIFY selectedSourceChanged)
     Q_PROPERTY(bool canRecord READ canRecord NOTIFY canRecordChanged)
     Q_PROPERTY(double audioLevel READ audioLevel NOTIFY audioLevelChanged)
+    Q_PROPERTY(CaptureMode captureMode READ captureMode NOTIFY captureModeChanged)
 
 public:
     explicit RecordingController(QObject *parent = nullptr);
 
     void setGpuRecorder(GpuScreenRecorder *recorder);
+    void setCaptureBackend(CaptureBackend *backend);
     void setPlatform(PlatformIntegration *platform);
     void setCursorTelemetry(CursorTelemetry *telemetry);
 
@@ -49,6 +64,7 @@ public:
     bool hasSelectedSource() const { return !m_selectedSource.isEmpty(); }
     bool canRecord() const;
     double audioLevel() const { return m_audioLevel; }
+    CaptureMode captureMode() const { return m_captureMode; }
 
     Q_INVOKABLE void startRecording();
     Q_INVOKABLE void stopRecording();
@@ -59,6 +75,10 @@ public:
     Q_INVOKABLE void cancelRecording();
     Q_INVOKABLE void selectSource(const QString &sourceId, const QString &sourceName);
     Q_INVOKABLE void openSourceSelector();
+    Q_INVOKABLE void selectFullScreen();
+    Q_INVOKABLE void selectWindow();
+    Q_INVOKABLE void beginAreaSelection();
+    Q_INVOKABLE void selectArea(int x, int y, int w, int h);
 
 signals:
     void recordingChanged();
@@ -72,12 +92,16 @@ signals:
     void audioLevelChanged();
     void recordingFinished(const QString &videoPath);
     void switchToEditor();
+    void captureModeChanged();
+    void areaSelectionRequested();
 
 private:
     void updateElapsed();
     void saveSessionFiles(const QString &videoPath);
+    CaptureBackend *activeBackend() const;
 
     GpuScreenRecorder *m_gpuRecorder = nullptr;
+    CaptureBackend *m_captureBackend = nullptr;
     PlatformIntegration *m_platform = nullptr;
     CursorTelemetry *m_cursorTelemetry = nullptr;
 
@@ -90,6 +114,10 @@ private:
     QString m_selectedSource;
     QString m_selectedSourceName;
     double m_audioLevel = 0.0;
+    CaptureMode m_captureMode = None;
+    QRect m_areaRect;
+    bool m_autoRecord = false;
+    QString m_outputPath;
 
     QTimer m_elapsedTimer;
     QElapsedTimer m_elapsedClock;

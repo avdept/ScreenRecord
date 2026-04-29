@@ -7,7 +7,7 @@ on:
     branches: [master]
 
 jobs:
-  test:
+  linux:
     name: Build & Test (Linux)
     runs-on: ubuntu-24.04
     steps:
@@ -46,6 +46,39 @@ jobs:
 
       - name: Run tests
         working-directory: build
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --output-on-failure
+
+  macos:
+    name: Build & Test (macOS)
+    # macOS 15 runner: SCRecordingOutput / .hevcWithAlpha need macOS 15+.
+    # The runner has Xcode + Swift toolchain pre-installed.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          brew update
+          brew install ninja ffmpeg pkg-config
+
+      - name: Install Qt 6.5
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.5.3
+          modules: qtmultimedia
+          cache: true
+
+      - name: Configure
+        # No CODESIGN_IDENTITY available on CI — CMake falls back to ad-hoc.
+        run: cmake --preset default
+
+      - name: Build
+        run: cmake --build build/default --parallel
+
+      - name: Run tests
+        working-directory: build/default
         env:
           QT_QPA_PLATFORM: offscreen
         run: ctest --output-on-failure

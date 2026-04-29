@@ -37,13 +37,49 @@ bool FFmpegDecoder::open(const QString &filePath)
     if (m_videoStreamIdx < 0) { close(); return false; }
 
     auto *codecpar = m_formatCtx->streams[m_videoStreamIdx]->codecpar;
-    auto *codec = avcodec_find_decoder(codecpar->codec_id);
+    const AVCodec *codec = nullptr;
+
+#ifdef Q_OS_MACOS
+    // Prefer hevc_videotoolbox on macOS — the default software HEVC decoder
+    // ignores the alpha auxiliary layer in HEVC-with-alpha files, producing
+    // opaque output. The VideoToolbox decoder handles alpha natively.
+    if (codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        codec = avcodec_find_decoder_by_name("hevc_videotoolbox");
+    }
+#endif
+    if (!codec)
+        codec = avcodec_find_decoder(codecpar->codec_id);
     if (!codec) { close(); return false; }
 
     m_codecCtx = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(m_codecCtx, codecpar);
     m_codecCtx->thread_count = 0;  // auto
     m_codecCtx->thread_type = FF_THREAD_FRAME | FF_THREAD_SLICE;
+
+#ifdef Q_OS_MACOS
+    // macOS only: prefer alpha-aware pixel formats when the HEVC decoder
+    // offers a choice. Without this, FFmpeg's software hevc decoder outputs
+    // yuv420p for HEVC-with-alpha files recorded via ScreenCaptureKit — the
+    // alpha auxiliary layer is silently dropped.
+    //
+    // Gated to macOS because on Linux the decoder may be negotiating a
+    // hardware-accelerated surface format (e.g. VAAPI). Preferring a software
+    // alpha format there would force SW decoding and defeat hwaccel. Linux
+    // recordings come from gpu-screen-recorder as plain H.264/HEVC without
+    // alpha, so the callback serves no purpose on that platform.
+    m_codecCtx->get_format = [](AVCodecContext *, const AVPixelFormat *fmts) -> AVPixelFormat {
+        for (int i = 0; fmts[i] != AV_PIX_FMT_NONE; ++i) {
+            if (fmts[i] == AV_PIX_FMT_YUVA420P
+                || fmts[i] == AV_PIX_FMT_YUVA422P
+                || fmts[i] == AV_PIX_FMT_YUVA444P
+                || fmts[i] == AV_PIX_FMT_BGRA
+                || fmts[i] == AV_PIX_FMT_RGBA) {
+                return fmts[i];
+            }
+        }
+        return fmts[0];
+    };
+#endif
 
     if (avcodec_open2(m_codecCtx, codec, nullptr) < 0) {
         avcodec_free_context(&m_codecCtx);

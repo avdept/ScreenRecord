@@ -57,7 +57,9 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
     QStringList args = {
         "-w", options.windowMode,
         "-k", "auto",
-        "-s", "0x0",
+        "-s", options.captureRegion.isNull()
+              ? QString("0x0")
+              : QString("%1x%2").arg(options.captureRegion.width()).arg(options.captureRegion.height()),
         "-f", QString::number(options.frameRate),
         "-fm", "cfr",
         "-fallback-cpu-encoding", "yes",

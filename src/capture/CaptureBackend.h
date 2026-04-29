@@ -31,6 +31,11 @@ public:
     virtual void cancelRecording() = 0;
     virtual bool isAvailable() const = 0;
 
+    // File extension the backend prefers for its output (no dot).
+    // Default is "mp4" for broad compatibility; macOS HEVC-with-alpha
+    // requires .mov and overrides this.
+    virtual QString preferredExtension() const { return QStringLiteral("mp4"); }
+
 signals:
     void stateChanged(RecordingState state);
     void recordingStarted(const QString &outputPath);

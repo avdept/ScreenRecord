@@ -2,6 +2,7 @@
 
 #include "CaptureBackend.h"
 #include <QProcess>
+#include <QRect>
 #include <QTimer>
 
 namespace screencopy {
@@ -12,7 +13,8 @@ struct RecordingOptions {
     bool systemAudio = true;
     bool microphone = false;
     int frameRate = 60;
-    QString windowMode = "portal";  // "portal", "focused", or a window ID
+    QString windowMode = "portal";  // "portal", "focused", or a window/display ID
+    QRect captureRegion;            // non-null for area capture
 };
 
 class GpuScreenRecorder : public CaptureBackend

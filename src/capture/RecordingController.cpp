@@ -1,5 +1,9 @@
 #include "RecordingController.h"
+#include "CaptureBackend.h"
 #include "GpuScreenRecorder.h"
+#ifdef Q_OS_MACOS
+#include "MacCaptureBackend.h"
+#endif
 #include "CursorTelemetry.h"
 #include "PlatformIntegration.h"
 #include <QDateTime>
@@ -79,6 +83,62 @@ void RecordingController::setGpuRecorder(GpuScreenRecorder *recorder)
     });
 }
 
+void RecordingController::setCaptureBackend(CaptureBackend *backend)
+{
+    m_captureBackend = backend;
+    if (!m_captureBackend)
+        return;
+
+    connect(m_captureBackend, &CaptureBackend::recordingStarted, this, [this](const QString &path) {
+        m_recording = true;
+        m_paused = false;
+        m_elapsedSeconds = 0;
+        m_accumulatedMs = 0;
+        m_elapsedClock.start();
+        m_elapsedTimer.start();
+
+        if (m_cursorTelemetry)
+            m_cursorTelemetry->startRecording();
+
+        emit recordingChanged();
+        emit pausedChanged();
+        emit elapsedSecondsChanged();
+    });
+
+    connect(m_captureBackend, &CaptureBackend::recordingStopped, this, [this](const QString &path) {
+        m_elapsedTimer.stop();
+
+        if (m_cursorTelemetry)
+            m_cursorTelemetry->stopRecording();
+
+        // Use the stored output path since the signal path may be empty
+        QString videoPath = m_captureBackend ? m_outputPath : path;
+        saveSessionFiles(videoPath);
+
+        m_recording = false;
+        m_paused = false;
+        emit recordingChanged();
+        emit pausedChanged();
+        emit recordingFinished(videoPath);
+        emit switchToEditor();
+    });
+
+    connect(m_captureBackend, &CaptureBackend::recordingError, this, [this](const QString &err) {
+        qWarning() << "Recording error:" << err;
+        m_elapsedTimer.stop();
+
+        if (m_cursorTelemetry) {
+            m_cursorTelemetry->stopRecording();
+            m_cursorTelemetry->clear();
+        }
+
+        m_recording = false;
+        m_paused = false;
+        emit recordingChanged();
+        emit pausedChanged();
+    });
+}
+
 void RecordingController::setPlatform(PlatformIntegration *platform)
 {
     m_platform = platform;
@@ -88,6 +148,11 @@ void RecordingController::setPlatform(PlatformIntegration *platform)
             m_selectedSource = sourceName;
             m_selectedSourceName = sourceId;
             emit selectedSourceChanged();
+
+            if (m_autoRecord) {
+                m_autoRecord = false;
+                startRecording();
+            }
         });
 
         connect(m_platform, &PlatformIntegration::sourceSelectionError, this,
@@ -135,11 +200,21 @@ void RecordingController::setWebcamEnabled(bool enabled)
 
 bool RecordingController::canRecord() const
 {
-    // On Wayland with gpu-screen-recorder, always allow — portal handles source selection
     if (m_gpuRecorder && m_gpuRecorder->isAvailable())
         return true;
-    // On other platforms, need a selected source
-    return hasSelectedSource();
+    if (m_captureBackend && m_captureBackend->isAvailable())
+        return hasSelectedSource();
+    return false;
+}
+
+// Returns the active backend: gpu-screen-recorder if available, else the platform backend
+CaptureBackend *RecordingController::activeBackend() const
+{
+    if (m_gpuRecorder && m_gpuRecorder->isAvailable())
+        return m_gpuRecorder;
+    if (m_captureBackend && m_captureBackend->isAvailable())
+        return m_captureBackend;
+    return nullptr;
 }
 
 void RecordingController::startRecording()
@@ -147,53 +222,70 @@ void RecordingController::startRecording()
     if (m_recording)
         return;
 
-    // Don't start again if gpu-screen-recorder is already spawned (portal open)
-    if (m_gpuRecorder && m_gpuRecorder->state() != RecordingState::Idle)
-        return;
-
-    if (!m_gpuRecorder || !m_gpuRecorder->isAvailable()) {
-        // TODO: non-gpu-screen-recorder path
+    auto *backend = activeBackend();
+    if (!backend) {
         qWarning() << "No recording backend available";
         return;
     }
+
+    if (backend->state() != RecordingState::Idle)
+        return;
 
     // Build output path
     auto dir = m_platform ? m_platform->recordingsDir() : "/tmp";
     QDir().mkpath(dir);
     auto timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss");
-    auto outputPath = QString("%1/recording-%2.mp4").arg(dir, timestamp);
+    QString ext = backend->preferredExtension();
+    m_outputPath = QString("%1/recording-%2.%3").arg(dir, timestamp, ext);
 
     // Configure recording options from current toggle state
     RecordingOptions options;
     options.systemAudio = m_systemAudioEnabled;
     options.microphone = m_microphoneEnabled;
     options.frameRate = 60;
-    options.windowMode = "portal";  // gpu-screen-recorder shows portal picker itself
 
-    m_gpuRecorder->startRecording(outputPath, options);
-    // Don't set m_recording=true yet — wait for recordingStarted signal
-    // (fires when portal selection is done and recording actually begins)
+    if (!m_selectedSourceName.isEmpty())
+        options.windowMode = m_selectedSourceName;
+    else
+        options.windowMode = "portal";
+
+    if (m_captureMode == Area && !m_areaRect.isNull())
+        options.captureRegion = m_areaRect;
+
+    // Use the platform-specific overload that accepts RecordingOptions.
+    // On Linux, m_captureBackend is always nullptr — only the gpu-recorder path runs.
+    if (backend == m_gpuRecorder) {
+        m_gpuRecorder->startRecording(m_outputPath, options);
+    }
+#ifdef Q_OS_MACOS
+    else {
+        static_cast<MacCaptureBackend *>(m_captureBackend)->startRecording(m_outputPath, options);
+    }
+#endif
 }
 
 void RecordingController::stopRecording()
 {
-    if (!m_gpuRecorder)
+    auto *backend = activeBackend();
+    if (!backend)
         return;
 
-    // Allow stopping even during Starting state (portal selection)
-    if (!m_recording && m_gpuRecorder->state() == RecordingState::Idle)
+    if (!m_recording && backend->state() == RecordingState::Idle)
         return;
 
-    m_gpuRecorder->stopRecording();
-    // Finalization happens in the recordingStopped signal handler
+    backend->stopRecording();
 }
 
 void RecordingController::pauseRecording()
 {
-    if (!m_recording || m_paused || !m_gpuRecorder)
+    if (!m_recording || m_paused)
         return;
 
-    m_gpuRecorder->pauseRecording();
+    auto *backend = activeBackend();
+    if (!backend)
+        return;
+
+    backend->pauseRecording();
     m_accumulatedMs += m_elapsedClock.elapsed();
     m_paused = true;
     emit pausedChanged();
@@ -201,10 +293,14 @@ void RecordingController::pauseRecording()
 
 void RecordingController::resumeRecording()
 {
-    if (!m_recording || !m_paused || !m_gpuRecorder)
+    if (!m_recording || !m_paused)
         return;
 
-    m_gpuRecorder->resumeRecording();
+    auto *backend = activeBackend();
+    if (!backend)
+        return;
+
+    backend->resumeRecording();
     m_elapsedClock.restart();
     m_paused = false;
     emit pausedChanged();
@@ -228,13 +324,14 @@ void RecordingController::restartRecording()
 
 void RecordingController::cancelRecording()
 {
-    if (!m_gpuRecorder)
+    auto *backend = activeBackend();
+    if (!backend)
         return;
 
-    if (!m_recording && m_gpuRecorder->state() == RecordingState::Idle)
+    if (!m_recording && backend->state() == RecordingState::Idle)
         return;
 
-    m_gpuRecorder->cancelRecording();
+    backend->cancelRecording();
     m_recording = false;
     m_paused = false;
     m_elapsedSeconds = 0;
@@ -263,6 +360,42 @@ void RecordingController::openSourceSelector()
     // Show the native source picker on all platforms
     if (m_platform)
         m_platform->requestSourceSelection();
+}
+
+void RecordingController::selectFullScreen()
+{
+    m_captureMode = FullScreen;
+    m_autoRecord = true;
+    emit captureModeChanged();
+
+    if (m_platform)
+        m_platform->selectFullScreen();
+}
+
+void RecordingController::selectWindow()
+{
+    m_captureMode = Window;
+    m_autoRecord = true;
+    emit captureModeChanged();
+
+    if (m_platform)
+        m_platform->selectWindow();
+}
+
+void RecordingController::beginAreaSelection()
+{
+    m_captureMode = Area;
+    emit captureModeChanged();
+    emit areaSelectionRequested();
+}
+
+void RecordingController::selectArea(int x, int y, int w, int h)
+{
+    m_areaRect = QRect(x, y, w, h);
+    m_selectedSourceName = QString("area:%1,%2,%3x%4").arg(x).arg(y).arg(w).arg(h);
+    m_selectedSource = QString("Area (%1\u00d7%2)").arg(w).arg(h);
+    emit selectedSourceChanged();
+    startRecording();
 }
 
 void RecordingController::saveSessionFiles(const QString &videoPath)

@@ -26,14 +26,30 @@ ApplicationWindow {
         visible: false
     }
 
-    // When recording finishes, hide HUD and show editor
+    // Area selection overlay
+    AreaSelectionOverlay {
+        id: areaOverlay
+        onAreaSelected: function(x, y, w, h) {
+            Recorder.selectArea(x, y, w, h)
+        }
+    }
+
     Connections {
         target: Recorder
+
+        // When recording finishes, hide HUD and show editor
         function onRecordingFinished(videoPath) {
             editorWindow.videoPath = videoPath
             editorWindow.visible = true
             editorWindow.showMaximized()
             hudWindow.visible = false
+        }
+
+        // When area selection is requested, show the overlay
+        function onAreaSelectionRequested() {
+            areaOverlay.visible = true
+            areaOverlay.raise()
+            areaOverlay.requestActivate()
         }
     }
 

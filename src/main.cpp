@@ -15,6 +15,9 @@
 #include "capture/GpuScreenRecorder.h"
 #include "capture/CursorTelemetry.h"
 #include "capture/RecordingController.h"
+#ifdef Q_OS_MACOS
+#include "capture/MacCaptureBackend.h"
+#endif
 #include "platform/PlatformIntegration.h"
 #include "i18n/I18nManager.h"
 #include "renderer/VideoPlayer.h"
@@ -57,14 +60,24 @@ int main(int argc, char *argv[])
     auto *cursorTelemetry = new screencopy::CursorTelemetry(&app);
     auto *recorder = new screencopy::RecordingController(&app);
     recorder->setGpuRecorder(gpuRecorder);
+#ifdef Q_OS_MACOS
+    auto *macBackend = new screencopy::MacCaptureBackend(platform, &app);
+    recorder->setCaptureBackend(macBackend);
+#endif
     recorder->setPlatform(platform);
     recorder->setCursorTelemetry(cursorTelemetry);
 
     QQmlApplicationEngine engine;
 
+    // Add the build directory as a QML import path so the ScreenCopy module is found
+    // when running as a .app bundle (executable is at .app/Contents/MacOS/)
+    engine.addImportPath(QCoreApplication::applicationDirPath() + "/../../..");
+
     // Register QML types
     qmlRegisterType<screencopy::VideoPlayer>("ScreenCopy", 1, 0, "VideoPlayer");
     qmlRegisterType<screencopy::ShadowRenderer>("ScreenCopy", 1, 0, "ShadowRenderer");
+    qmlRegisterUncreatableType<screencopy::RecordingController>(
+        "ScreenCopy", 1, 0, "RecordingController", "Access via Recorder singleton");
 
     // Register singletons — organized by domain
     // App

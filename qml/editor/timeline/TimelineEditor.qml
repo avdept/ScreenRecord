@@ -224,6 +224,9 @@ Item {
 
                     // Delete button
                     Rectangle {
+                        // Above segMouseArea which otherwise swallows clicks
+                        // because it's declared later and fills the segment.
+                        z: 1
                         visible: segMouseArea.containsMouse && TrimModel.count > 1
                         anchors.right: parent.right
                         anchors.top: parent.top

@@ -149,7 +149,11 @@ VideoPlayer::VideoPlayer(QQuickItem *parent)
     , m_decoder(std::make_unique<FFmpegDecoder>())
     , m_scrubDecoder(std::make_unique<FFmpegDecoder>())
 {
-    setRenderTarget(QQuickPaintedItem::FramebufferObject);
+    // Image render target uses a QImage backing with proper alpha support.
+    // FramebufferObject can drop alpha on some GPUs/drivers because the FBO
+    // may be created without an alpha channel in its color attachment.
+    setRenderTarget(QQuickPaintedItem::Image);
+    setFillColor(Qt::transparent);
     m_frameTimer.setTimerType(Qt::PreciseTimer);
     m_worker.setDecoder(m_decoder.get());
 

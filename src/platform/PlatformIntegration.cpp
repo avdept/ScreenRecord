@@ -9,6 +9,8 @@
 
 #ifdef Q_OS_LINUX
 #include "LinuxPlatform.h"
+#elif defined(Q_OS_MACOS)
+#include "MacPlatform.h"
 #endif
 
 namespace screencopy {
@@ -23,8 +25,7 @@ PlatformIntegration *PlatformIntegration::create(QObject *parent)
 #ifdef Q_OS_LINUX
     return new LinuxPlatform(parent);
 #elif defined(Q_OS_MACOS)
-    // TODO: return new MacPlatform(parent);
-    return nullptr;
+    return new MacPlatform(parent);
 #elif defined(Q_OS_WIN)
     // TODO: return new WindowsPlatform(parent);
     return nullptr;
