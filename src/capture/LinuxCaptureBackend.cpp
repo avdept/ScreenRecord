@@ -1,4 +1,4 @@
-#include "GpuScreenRecorder.h"
+#include "LinuxCaptureBackend.h"
 #include "PlatformIntegration.h"
 #include <QFile>
 #include <QFileInfo>
@@ -12,7 +12,7 @@ static const int POLL_INTERVAL_MS = 200;
 static const int POLL_TIMEOUT_MS = 30000;
 static const int STOP_TIMEOUT_MS = 5000;
 
-GpuScreenRecorder::GpuScreenRecorder(PlatformIntegration *platform, QObject *parent)
+LinuxCaptureBackend::LinuxCaptureBackend(PlatformIntegration *platform, QObject *parent)
     : CaptureBackend(parent)
     , m_platform(platform)
 {
@@ -28,22 +28,17 @@ GpuScreenRecorder::GpuScreenRecorder(PlatformIntegration *platform, QObject *par
     });
 }
 
-GpuScreenRecorder::~GpuScreenRecorder()
+LinuxCaptureBackend::~LinuxCaptureBackend()
 {
     killIfRunning();
 }
 
-bool GpuScreenRecorder::isAvailable() const
+bool LinuxCaptureBackend::isAvailable() const
 {
     return QFile::exists(GPU_RECORDER_PATH);
 }
 
-void GpuScreenRecorder::startRecording(const QString &outputPath)
-{
-    startRecording(outputPath, RecordingOptions{});
-}
-
-void GpuScreenRecorder::startRecording(const QString &outputPath, const RecordingOptions &options)
+void LinuxCaptureBackend::startRecording(const QString &outputPath, const RecordingOptions &options)
 {
     if (m_state != RecordingState::Idle)
         return;
@@ -66,7 +61,6 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
         "-o", outputPath,
     };
 
-    // Audio sources
     QStringList audioSources;
     if (options.systemAudio)
         audioSources << "default_output";
@@ -92,7 +86,6 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
             emit stateChanged(m_state);
             emit recordingStopped(m_outputPath);
         } else if (m_state != RecordingState::Idle) {
-            // Unexpected exit
             qWarning() << "gpu-screen-recorder: unexpected exit, code" << exitCode;
             m_state = RecordingState::Idle;
             emit stateChanged(m_state);
@@ -132,7 +125,7 @@ void GpuScreenRecorder::startRecording(const QString &outputPath, const Recordin
     m_pollTimer->start();
 }
 
-void GpuScreenRecorder::stopRecording()
+void LinuxCaptureBackend::stopRecording()
 {
     if (m_state != RecordingState::Recording && m_state != RecordingState::Paused)
         return;
@@ -141,7 +134,7 @@ void GpuScreenRecorder::stopRecording()
     emit stateChanged(m_state);
 
     if (m_process) {
-        // Send SIGINT (not SIGTERM) — gpu-screen-recorder handles SIGINT for clean stop
+        // SIGINT (not SIGTERM) — gpu-screen-recorder handles SIGINT for clean stop
         ::kill(m_process->processId(), SIGINT);
 
         QTimer::singleShot(STOP_TIMEOUT_MS, this, [this]() {
@@ -153,7 +146,7 @@ void GpuScreenRecorder::stopRecording()
     }
 }
 
-void GpuScreenRecorder::pauseRecording()
+void LinuxCaptureBackend::pauseRecording()
 {
     if (m_state != RecordingState::Recording || !m_process)
         return;
@@ -163,7 +156,7 @@ void GpuScreenRecorder::pauseRecording()
     emit stateChanged(m_state);
 }
 
-void GpuScreenRecorder::resumeRecording()
+void LinuxCaptureBackend::resumeRecording()
 {
     if (m_state != RecordingState::Paused || !m_process)
         return;
@@ -173,7 +166,7 @@ void GpuScreenRecorder::resumeRecording()
     emit stateChanged(m_state);
 }
 
-void GpuScreenRecorder::cancelRecording()
+void LinuxCaptureBackend::cancelRecording()
 {
     killIfRunning();
 
@@ -184,7 +177,7 @@ void GpuScreenRecorder::cancelRecording()
     emit stateChanged(m_state);
 }
 
-void GpuScreenRecorder::killIfRunning()
+void LinuxCaptureBackend::killIfRunning()
 {
     m_startTimeout.stop();
     if (m_pollTimer) {

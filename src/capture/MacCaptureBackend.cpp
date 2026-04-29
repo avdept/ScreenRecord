@@ -38,11 +38,6 @@ bool MacCaptureBackend::isAvailable() const
     return m_recorder != nullptr;
 }
 
-void MacCaptureBackend::startRecording(const QString &outputPath)
-{
-    startRecording(outputPath, RecordingOptions{});
-}
-
 void MacCaptureBackend::startRecording(const QString &outputPath, const RecordingOptions &options)
 {
     if (m_state != RecordingState::Idle || !m_recorder)

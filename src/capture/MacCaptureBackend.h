@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CaptureBackend.h"
-#include "GpuScreenRecorder.h" // for RecordingOptions
 
 namespace screencopy {
 
@@ -19,8 +18,7 @@ public:
 
     RecordingState state() const override { return m_state; }
 
-    void startRecording(const QString &outputPath) override;
-    void startRecording(const QString &outputPath, const RecordingOptions &options);
+    void startRecording(const QString &outputPath, const RecordingOptions &options) override;
     void stopRecording() override;
     void pauseRecording() override;
     void resumeRecording() override;

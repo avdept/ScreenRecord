@@ -12,7 +12,7 @@ public:
     explicit PipeWireCapture(QObject *parent = nullptr);
 
     RecordingState state() const override { return m_state; }
-    void startRecording(const QString &outputPath) override;
+    void startRecording(const QString &outputPath, const RecordingOptions &options) override;
     void stopRecording() override;
     void pauseRecording() override;
     void resumeRecording() override;

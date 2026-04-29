@@ -13,10 +13,11 @@ bool PipeWireCapture::isAvailable() const
     return true;
 }
 
-void PipeWireCapture::startRecording(const QString &outputPath)
+void PipeWireCapture::startRecording(const QString &outputPath, const RecordingOptions &options)
 {
     // TODO: implement PipeWire portal screen capture
     Q_UNUSED(outputPath);
+    Q_UNUSED(options);
 }
 
 void PipeWireCapture::stopRecording()
