@@ -2,37 +2,32 @@
 
 #include "CaptureBackend.h"
 #include <QProcess>
-#include <QRect>
 #include <QTimer>
 
 namespace screencopy {
 
 class PlatformIntegration;
 
-struct RecordingOptions {
-    bool systemAudio = true;
-    bool microphone = false;
-    int frameRate = 60;
-    QString windowMode = "portal";  // "portal", "focused", or a window/display ID
-    QRect captureRegion;            // non-null for area capture
-};
-
-class GpuScreenRecorder : public CaptureBackend
+// Wraps the external `gpu-screen-recorder` binary, used as the Linux capture
+// engine. Source selection is delegated to the XDG ScreenCast portal, which
+// gpu-screen-recorder invokes itself when started — so the user picker comes
+// up at start time rather than ahead of time.
+class LinuxCaptureBackend : public CaptureBackend
 {
     Q_OBJECT
 
 public:
-    explicit GpuScreenRecorder(PlatformIntegration *platform, QObject *parent = nullptr);
-    ~GpuScreenRecorder() override;
+    explicit LinuxCaptureBackend(PlatformIntegration *platform, QObject *parent = nullptr);
+    ~LinuxCaptureBackend() override;
 
     RecordingState state() const override { return m_state; }
-    void startRecording(const QString &outputPath) override;
-    void startRecording(const QString &outputPath, const RecordingOptions &options);
+    void startRecording(const QString &outputPath, const RecordingOptions &options) override;
     void stopRecording() override;
     void pauseRecording() override;
     void resumeRecording() override;
     void cancelRecording() override;
     bool isAvailable() const override;
+    bool requiresSourceSelection() const override { return false; }
 
     QString outputPath() const { return m_outputPath; }
 

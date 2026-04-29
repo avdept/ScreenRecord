@@ -12,12 +12,9 @@
 #include "editor/TrimModel.h"
 #include "editor/EffectRegionModel.h"
 #include "project/ProjectManager.h"
-#include "capture/GpuScreenRecorder.h"
+#include "capture/CaptureBackend.h"
 #include "capture/CursorTelemetry.h"
 #include "capture/RecordingController.h"
-#ifdef Q_OS_MACOS
-#include "capture/MacCaptureBackend.h"
-#endif
 #include "platform/PlatformIntegration.h"
 #include "i18n/I18nManager.h"
 #include "renderer/VideoPlayer.h"
@@ -56,14 +53,10 @@ int main(int argc, char *argv[])
     videoExporter->setEffectRegions(effectRegions);
 
     // Capture
-    auto *gpuRecorder = new screencopy::GpuScreenRecorder(platform, &app);
+    auto *captureBackend = screencopy::CaptureBackend::create(platform, &app);
     auto *cursorTelemetry = new screencopy::CursorTelemetry(&app);
     auto *recorder = new screencopy::RecordingController(&app);
-    recorder->setGpuRecorder(gpuRecorder);
-#ifdef Q_OS_MACOS
-    auto *macBackend = new screencopy::MacCaptureBackend(platform, &app);
-    recorder->setCaptureBackend(macBackend);
-#endif
+    recorder->setBackend(captureBackend);
     recorder->setPlatform(platform);
     recorder->setCursorTelemetry(cursorTelemetry);
 

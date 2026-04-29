@@ -1,7 +1,6 @@
 add_library(screencopy_capture STATIC
     CaptureBackend.h
-    GpuScreenRecorder.h
-    GpuScreenRecorder.cpp
+    CaptureBackend.cpp
     CursorTelemetry.h
     CursorTelemetry.cpp
     AudioCapture.h
@@ -19,6 +18,13 @@ target_link_libraries(screencopy_capture PUBLIC
 )
 
 target_include_directories(screencopy_capture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(UNIX AND NOT APPLE)
+    target_sources(screencopy_capture PRIVATE
+        LinuxCaptureBackend.h
+        LinuxCaptureBackend.cpp
+    )
+endif()
 
 if(APPLE)
     target_sources(screencopy_capture PRIVATE

@@ -8,8 +8,6 @@
 namespace screencopy {
 
 class CaptureBackend;
-class GpuScreenRecorder;
-class MacCaptureBackend;
 class PlatformIntegration;
 class CursorTelemetry;
 
@@ -43,8 +41,7 @@ private:
 public:
     explicit RecordingController(QObject *parent = nullptr);
 
-    void setGpuRecorder(GpuScreenRecorder *recorder);
-    void setCaptureBackend(CaptureBackend *backend);
+    void setBackend(CaptureBackend *backend);
     void setPlatform(PlatformIntegration *platform);
     void setCursorTelemetry(CursorTelemetry *telemetry);
 
@@ -98,10 +95,8 @@ signals:
 private:
     void updateElapsed();
     void saveSessionFiles(const QString &videoPath);
-    CaptureBackend *activeBackend() const;
 
-    GpuScreenRecorder *m_gpuRecorder = nullptr;
-    CaptureBackend *m_captureBackend = nullptr;
+    CaptureBackend *m_backend = nullptr;
     PlatformIntegration *m_platform = nullptr;
     CursorTelemetry *m_cursorTelemetry = nullptr;
 
